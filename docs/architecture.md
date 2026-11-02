@@ -141,8 +141,8 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 #### A seller drops out after the buyer has approved
 
 - *(Decided.)* The line goes back to the pool for up to **30 minutes** and the buyer is told. The dropped seller's credit for that line is taken back and held by Nyange until a replacement seller claims the line or the buyer is refunded.
-- *(Proposed.)* If a replacement claims and the order total is unchanged or lower, the order carries on. If the total would be higher (a pricier seller, or a changed delivery fee), the buyer must re-approve within a short window, otherwise the order is cancelled with a full refund.
-- *(Proposed.)* If nobody claims the line in time, the buyer chooses: cancel the whole order with a full refund, or carry on without that line and be refunded for it.
+- *(Decided.)* If a replacement claims and the order total is unchanged or lower, the order carries on. If the total would be higher (a pricier seller, or a changed delivery fee), the buyer must re-approve within **15 minutes**, otherwise the order is cancelled with a full refund. The same applies to any change that would raise what the buyer pays.
+- *(Decided.)* If nobody claims the line within the 30 minutes, the buyer chooses within 15 minutes: cancel the whole order with a full refund, or carry on without that line and be refunded for it. No choice within the 15 minutes cancels the order (silence cancels, as elsewhere).
 
 - **Penalties** for a seller or agent who drops out after the buyer has approved are a tunable rule (amount, and whether they apply at all). **They are waived at launch.**
 
@@ -320,7 +320,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Cancellation fee after goods are ready | 0% (tunable, waivable) |
 | How long a dropped line waits for a replacement seller | 30 minutes |
 | Penalty for a seller or agent who drops out after approval | waived at launch (tunable) |
-| Buyer re-approval window when a replacement changes the total | to be decided (proposed: 15 minutes) |
+| Buyer re-approval window when a change raises the total | 15 minutes |
+| Buyer's choice window when no replacement is found | 15 minutes (no choice cancels) |
 | Final-fee notification channels | push and durable in-app |
 | Agent preference window (affinity) | to be decided |
 | Delivery rate per km | UGX 1,500 (placeholder) |
@@ -364,11 +365,12 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 21. After payment the buyer can cancel only the whole order: free before any line is ready, with a cancellation fee once goods are ready (fee 0% at launch), and not at all once the goods are picked up (then it is a dispute).
 22. A seller who drops out after approval: the line goes back to the pool and waits up to 30 minutes for a replacement.
 23. Penalties for sellers and agents who drop out are waived at launch, and tunable.
+24. Anything that would raise what the buyer pays after they approved needs their re-approval within 15 minutes, otherwise the order is cancelled with a full refund.
+25. If no replacement seller claims a dropped line within 30 minutes, the buyer chooses within 15 minutes between cancelling the whole order (full refund) and carrying on without that line (refund for it); no choice cancels the order.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
 - Sellers withdrawing a claim before the buyer has decided or paid, and agents dropping a task after pickup (goods and cash in their hands).
-- The buyer's re-approval window if a replacement changes the total, and whether the buyer may keep the rest of the order if no replacement comes within the 30 minutes (both proposed in section 4.6).
 - The base of the cancellation fee (proposed: the item price of the lines already ready), compensating an agent already travelling when the buyer cancels, and how a fee is collected from a CoD buyer who has paid nothing.
 - Expiry: how long an unclaimed order line waits before it expires.
 - Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
