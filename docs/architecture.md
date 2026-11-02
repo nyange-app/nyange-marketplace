@@ -1,232 +1,244 @@
-# Nyange architecture
+# Nyange: business specification
 
-Nyange is a general-purpose marketplace for Uganda. Nyange owns the catalog; sellers own their
-prices and stock; Nyange's own pool of field agents performs deliveries and other on-the-ground work.
+Nyange is a general-purpose marketplace for Uganda. Nyange owns the catalog; sellers own their prices and stock;
+Nyange's own pool of field agents performs deliveries and other on-the-ground work.
 
-Status: design plus a tested data layer (`db/schema.sql`). No application code yet. The
-application stack is deliberately undecided (see "Decisions and open items").
+This document states **what the business does**: actors, workflows, lifecycles, rules and invariants. It deliberately
+says nothing about how any of it is built, stored or enforced. Technology choices are made separately, and any
+implementation must satisfy the invariants in section 7.
 
-## 1. Launch scope
+## 1. Scope at launch
 
 - **Goods:** LPG, water (Jibu type), beans, peas, sugar, peanuts, maize, maize flour, soya, soya flour, stationery.
 - **Services:** price lists, print house, boda rides, plumber, welder, electrician, building painter, auto mechanic.
-  Goods launch first. Services reuse the same claim engine but need their own flows (quotes, real-time dispatch,
-  file proofs), so they follow as separate work.
-- **Market:** all of Uganda, with pools capped by radius (section 3) and areas activated by supply (section 3).
-- **Payments:** cash on delivery, mobile money, in-house wallet.
-- **Clients:** React Native is out of scope for now. The API-first backend plus an admin console come first.
+  Goods launch first. Services follow as separate work, because they need their own flows (quotes, real-time
+  dispatch, file proofs).
+- **Market:** all of Uganda. Availability is local: an area opens when enough supply exists in it (section 3.2).
+- **Payment methods:** cash on delivery (CoD), mobile money, Nyange wallet.
+- **Assumption:** Nyange holds every licence and registration it needs to operate (wallet, payments, escrow,
+  payouts, others). Legal and regulatory questions are out of scope here.
 
-## 2. Actors and the two pools
+## 2. Actors
 
 | Actor | Role |
 |---|---|
-| Buyer | Orders from the Nyange catalog. Never picks a seller. |
-| Seller | Keeps standing offers (price, stock, service radius) on catalog variants. Does not set delivery fees. Claims order lines. |
-| Field agent | Claims tasks from a pool. Capabilities (delivery, price capture, cash deposit/withdrawal, payment collection, more later) are data, not code. |
-| Admin | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, tunes configuration. |
+| **Buyer** | Orders from the Nyange catalog. Never chooses a seller. |
+| **Seller** | Keeps standing offers (price, stock, service radius) on catalog items, from one or more locations they own. Claims order lines. Does not set delivery fees. |
+| **Field agent** | Claims tasks from a pool. Each agent has capabilities (delivery, market price capture, cash deposit, cash withdrawal, payment collection, more to be added). Belongs to Nyange's pool. |
+| **Admin** | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, sets rules and parameters. |
 
-Both pools use the same mechanism: something is posted, eligible actors within a radius see it, one actor claims it
-atomically, and it moves through a state machine.
+## 3. Core concepts
 
-```
-Buyer -> order lines -> [ORDER POOL] --claim--> Seller -> ready -> shipment -> delivery task
-                                                                                  |
-Field agent <------------------ claim ------------------ [TASK POOL: delivery | price_capture | cash_* | ...]
-```
+- **Catalog:** the list of goods and services Nyange sells. Nyange owns it; sellers cannot add products, only offer on them.
+- **Offer:** a seller's standing price and stock for a catalog item, tied to one of the seller's own locations.
+- **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
+- **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
+- **Shipment:** the lines from one seller location that travel together.
+- **Task:** a unit of work for a field agent (a delivery, a price capture, a cash deposit, and so on).
+- **Pool:** the set of open order lines (for sellers) or open tasks (for agents). Each pool entry has a location and a
+  search radius; only actors within range can see and claim it.
+- **Claim:** one actor taking an open pool entry. At most one actor can hold a claim on an entry at a time.
+- **Confirmation window:** how long a claimant has to confirm before the claim lapses and the entry returns to the pool.
+- **Area:** a named region of the country. Rules can be set per area and override the national defaults for anything
+  located inside that area.
 
-## 3. Pools, geography and coverage
+### 3.1 Radius and widening
 
-- Every pool entry has an anchor point and a radius. Eligibility is a geography query (`ST_DWithin`, metres):
-  - order line: within `least(seller location max radius, line pool radius)` of the buyer's drop point;
-  - task: agent's last known location within the task's pool radius of its anchor.
-- **Radius widening:** unclaimed items widen along configured steps (default 3 km -> 7 km after 2 min -> 15 km
-  after 5 min). A scheduler calls `expand_pool_radius`.
-- **Coverage gating:** a buyer only sees "order now" in an area with at least the configured minimum of eligible
-  sellers and agents. Otherwise they see "not yet available" and can join a waitlist. Controlled by
-  `coverage.*` config, off by default.
-- **Leases:** a claim must be confirmed within a lease, otherwise `release_expired_claims` returns the item to the pool.
-- **Areas:** each order and task is stamped with the smallest area covering its drop point or anchor (`area_for`, set by
-  a trigger on insert). Claim leases, affinity windows, cash controls and radius schedules are all looked up with that
-  area, so an area-scoped setting overrides the global one for items in that area. Items outside every area use global values.
+- A pool entry is visible to an actor only within range:
+  - **Order line:** the seller location must be within the smaller of the seller's own service radius and the line's current search radius, measured from the buyer's drop point.
+  - **Task:** the agent's last known location must be within the task's search radius of the task's anchor point.
+- An unclaimed entry widens its search radius in steps over time (default: 3 km, then 7 km after 2 minutes, then 15 km after 5 minutes).
+- Radius schedules can differ by area, and can be turned off for an area.
 
-## 4. Orders, per-line claims and affinity
+### 3.2 Coverage
 
-- The claimable unit is the **order line**. Each line has its own state, price lock and escrow slice.
-  Order status is derived from its lines.
-- **Price at checkout:** sellers hold standing offers. The buyer sees the min-max range across eligible offers in
-  their radius and pre-approves up to the max (`order_lines.max_unit_price_ugx`). A claim locks the claiming seller's
-  actual offer price. A claim is only allowed if the offer price is at or below the buyer's approved max.
-  (Buyer re-confirmation for above-max prices is a possible later addition.)
-- **Seller affinity:** when a seller claims one line, they get an exclusive window (default 90 s) on the other open
-  lines of the same order, so they can fulfil the whole basket.
-- **Shipments:** claimed lines from the same seller location group into one shipment, which becomes one delivery task.
-- **Agent affinity:** a delivery task may name a `preferred_agent_id` (an agent already handling a sibling shipment of
-  the same order) with a preference window. Multi-pickup tasks use ordered `task_stops`.
-- **Partial fulfilment:** lines can expire or be cancelled independently. The buyer is told and chooses.
-- **Delivery fee:** computed by Nyange from the optimised route (section 4a). It is paid by the buyer on top of the item price and becomes the task reward the agent sees.
+- When coverage gating is on, a buyer can order only in an area that has at least the minimum number of eligible sellers and agents. Otherwise they see "not yet available" and may join a waitlist.
+- Default: off.
 
-## 4a. Delivery pricing
+## 4. Workflows
 
-Nyange alone sets the rates; sellers have no say in delivery fees. A routing provider (Google, behind an interface so
-it can be swapped) supplies the geography; the money rules live in `compute_route_fees` in `db/schema.sql`.
+### 4.1 Buyer places an order
 
-1. Once lines are claimed and grouped into shipments, the provider returns one optimised route over all stops:
-   total distance `D` and duration `T`, plus each shipment's own standalone pickup-to-drop distance and duration.
-2. Route cost = `D (km) x rate_per_km + (T + dwell x stops) (min) x rate_per_min`.
-   The duration term lets slow, congested routes cost more than short fast ones. It ships at rate 0 (off) until
-   Nyange chooses a rate.
-3. Each shipment gets a factor, and the factors sum to 1. Default **distance-weighted**:
-   `standalone_km_i / sum(standalone_km)`. Alternatives: `equal`, and `cost` (weighted by standalone distance + time cost).
-4. Fee = `factor x route cost`, rounded up to a step (default UGX 500), at least `route.min_fee_ugx`, and **never more
-   than that shipment would pay travelling alone** (`route.cap_at_standalone`).
-5. `route_batch_ok` refuses to batch when the combined route is longer than the trips it replaces
-   (`route.max_detour_ratio`, default 1.0; null waives it).
-6. The agent's approach to the first pickup is **not** priced.
+1. Buyer chooses catalog items and quantities, pins a drop location, and picks a payment method.
+2. For each line, the buyer sees the **price range** across eligible standing offers in range (lowest to highest) and **approves up to the highest**. That approval is the line's price ceiling.
+3. The buyer also sees an **estimated delivery fee** (section 5). The final fee is set after sellers claim; the buyer's approval covers the difference between the estimate and the final fee.
+4. Each line enters the order pool.
 
-Worked example (rate UGX 1,500/km, no duration term): shipments A (8 km alone) and B (9 km alone), combined route 12 km.
-Route cost 18,000. Factors 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 alone.
+### 4.2 Seller claims a line
 
-Estimates and audit:
-- At checkout, before any seller claims, the fee is estimated as straight-line distance x `route.circuity_factor`
-  (default 1.4, to be calibrated against real routes). This needs no provider call.
-- The real route is requested only after claims, and stored in `route_quotes` / `route_quote_shipments` with the rates,
-  factors and resulting fees in force, so any fee can be explained in a dispute.
-- The buyer's approved ceiling covers the difference between estimate and final fee.
+1. Eligible sellers (in range, with a matching standing offer in stock, active) see the open line.
+2. A seller claims by choosing their offer. The claim succeeds only if the offer price is at or below the buyer's ceiling.
+3. On success the seller's actual offer price is **locked** for that line, and the seller must confirm within the confirmation window or the line returns to the pool.
+4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
+5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
 
-Provider notes (to verify before relying on them): Google's Routes API can optimise the order of intermediate stops,
-but that does not enforce "pickup before drop"; multi-buyer rounds need the Route Optimization API or our own solver.
-Check whether a two-wheeler travel mode is supported for Uganda (otherwise car routing approximates boda routes), the
-current pricing and a spend alert, and Google's terms on storing results. Road data is weaker outside Kampala.
+### 4.3 Fulfilment and shipping
 
-## 5. Claim engine
+1. The seller prepares the goods and marks the line ready.
+2. Ready lines from the same seller location form one **shipment**, which creates a delivery task.
+3. Lines from different sellers on the same order become separate shipments, but may be combined onto one route (section 5).
 
-A claim is a single conditional `UPDATE ... WHERE status = 'open'` that also checks eligibility and takes a row
-lock with `FOR UPDATE ... SKIP LOCKED`. Exactly one claimant wins; everyone else gets `false`.
+### 4.4 Agent claims a task
 
-- `claim_order_line(line, seller, offer)` - first locks the parent order row, so claims on sibling lines of one order
-  are serialised (and cannot deadlock on each other's affinity update). Then checks: order still open for fulfilment
-  (not cancelled), offer owned by the claiming seller and located at one of that seller's own locations, stock, price vs
-  buyer ceiling, radius, exclusive window, and that both the seller and its user are active. Order cancellation must
-  lock the order row the same way.
-- `claim_task(task, agent)` - locks the agent row (so one agent's concurrent claims are serialised), then checks status,
-  capability, radius, preferred-agent window, that the agent and its user are active, and the cash-float and
-  verification levers (section 7).
-- `release_expired_claims()` and `expand_pool_radius(...)` - scheduler hooks.
+1. Eligible agents (active, capable of the task type, in range) see open tasks.
+2. **Agent affinity:** a delivery task can be offered first, for a short window, to an agent already handling another shipment of the same order. After the window it opens to all eligible agents.
+3. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
+4. An agent must confirm within the confirmation window or the task returns to the pool.
+5. A task may have several ordered stops (for example two pickups then a drop-off).
 
-Verified by hand in a scratch database (see section 11): single-winner claims, radius limits, affinity window, price
-lock, lease release, radius widening and waiver, and a forced two-session race on sibling lines. Not yet verified:
-concurrent claims by the same agent, and everything under a real application's load.
+### 4.5 Delivery and settlement
 
-## 6. Money
+1. The agent collects the goods, delivers them, and records the outcome.
+2. **Payment:**
+   - *Mobile money / wallet:* the buyer pays up front; the money is held by Nyange until delivery.
+   - *CoD:* the agent collects cash at the drop-off. The agent now owes that cash to Nyange until they deposit it.
+3. When a line is completed, Nyange releases the money: the seller receives the item price less commission, the agent receives the delivery fee less Nyange's cut, and Nyange keeps commissions and cuts.
+4. Sellers and agents can withdraw their balance to mobile money.
 
-All money is integer UGX. The wallet is built in-house as a **double-entry, append-only ledger**:
+### 4.6 Cancellation, expiry and partial fulfilment
 
-- every journal sums to zero (enforced by a deferred constraint trigger at commit);
-- ledger rows cannot be updated or deleted;
-- balances are derived (`account_balances`), never stored;
-- every journal has a unique `idempotency_key`, so retried or replayed payment calls and webhooks are safe.
+*Draft: only partial fulfilment was decided so far; the cancellation, expiry and dispute rules below are proposals that need confirmation (section 9).*
 
-Sign convention: `+amount` is a debit, `-amount` a credit, so credit-normal accounts (wallets, escrow, revenue)
-show negative balances. Account owner by kind: buyer wallet -> `users.id`; seller wallet -> `sellers.id`;
-agent wallet and agent cash-in-hand -> `agents.id`; system accounts have no owner.
+- A buyer may cancel lines that no seller has claimed yet; cancelling an order cancels all of its unclaimed lines.
+- A line nobody claims within its allowed time expires. The buyer is told and chooses what to do with the rest of the order.
+- Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
+- If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution.
 
-Typical flows:
+## 5. Delivery pricing
 
-| Event | Entries |
+**Nyange alone sets delivery rates. Sellers have no say.** The buyer pays the delivery fee on top of item prices; it
+becomes the agent's reward for the delivery.
+
+1. Once lines are claimed and grouped into shipments, a **single best route** is worked out over all stops. This gives the route's total distance and travel time, plus each shipment's own standalone distance and time (as if it travelled alone).
+2. **Route cost** = route kilometres × rate per km, plus (route minutes + a dwell allowance per stop) × rate per minute. The time term makes slow, congested routes cost more than short, fast ones. It is off until Nyange chooses a rate.
+3. Each shipment gets a **share** of the route cost; shares add up to 100%. Default rule: **weighted by standalone distance** (a farther seller carries more). Alternatives: equal shares, or weighted by standalone cost.
+4. A shipment's fee is its share, **rounded up** to the rounding step (default UGX 500), at least the minimum fee, and **never more than that shipment would pay travelling alone**.
+5. **Batching is only worthwhile if the combined route is not longer than the separate trips it replaces** (times an allowed ratio, default 1.0). Otherwise the shipments are delivered separately at their standalone fees.
+6. The agent's trip to the first pickup is **not** charged to the buyer.
+
+**Worked example** (rate UGX 1,500/km, no time term): shipment A would be 8 km alone, B 9 km alone, and the combined route is 12 km. Route cost 18,000. Shares 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 if delivered separately.
+
+**Checkout estimate:** before any seller claims, the fee is estimated from straight-line distance multiplied by a road factor (default 1.4, to be calibrated against real routes).
+
+**Audit:** for every delivery, Nyange keeps the route, the rates and shares used, and the resulting fees, so any fee can be explained in a dispute.
+
+**Routing source:** the route and times come from an external mapping source (initially Google Maps Platform). Its fit for Uganda is an open question (section 9).
+
+## 6. Money and cash on delivery
+
+### 6.1 Money rules
+
+- All amounts are whole Ugandan shillings.
+- Every movement of money is recorded as a balanced entry (what leaves one place arrives in another).
+- History is never changed or removed; corrections are new entries.
+- Balances are always the result of the history, never a number edited by hand.
+- A repeated payment instruction (a retried request, a duplicate notification from a provider) takes effect once.
+- Mobile money providers are only the way money moves in and out. Nyange reconciles against their statements.
+
+| Event | Money moves |
 |---|---|
-| Mobile money in | debit `provider_clearing`, credit `escrow` |
-| CoD collected by agent | debit `agent_cash_in_hand`, credit `escrow` |
-| Agent deposits cash | debit `provider_clearing`, credit `agent_cash_in_hand` |
-| Line completed | debit `escrow`; credit `seller_wallet` (price less commission), credit `platform_revenue` (commission) |
-| Delivery completed | debit `escrow`; credit `agent_wallet` (fee less cut), credit `platform_revenue` (cut) |
-| Withdrawal | debit `seller_wallet` or `agent_wallet`, credit `provider_clearing` |
+| Buyer pays by mobile money | Provider → Nyange-held funds |
+| Agent collects CoD cash | Agent's cash-in-hand ↑ (agent owes Nyange); Nyange-held funds ↑ |
+| Agent deposits cash | Agent's cash-in-hand ↓; provider/bank ↑ |
+| Line completed | Nyange-held funds → seller (price less commission) + Nyange revenue (commission) |
+| Delivery completed | Nyange-held funds → agent (fee less cut) + Nyange revenue (cut) |
+| Withdrawal | Seller or agent balance → provider |
 
-Mobile money providers are the rails only (collection and payout). A reconciliation job against provider statements
-is required.
+### 6.2 Cash on delivery controls
 
-**Licensing:** this design assumes Nyange holds all licences and registrations it needs to operate (digital wallet,
-payments, escrow and payouts, and any others). Legal and regulatory questions are out of scope here. The ledger is
-provider-agnostic, and mobile money providers remain the collection and payout rails.
+An agent holding collected cash is exposed to loss or theft. Every control below is a tunable rule, can be set nationally,
+per area, or per agent, and **can be waived entirely**. At launch they are all waived to make agent onboarding easy.
 
-## 7. Cash on delivery and agent risk
-
-CoD makes the agent liable for the cash they hold (the `agent_cash_in_hand` balance). Every control is a
-configuration lever and can be scoped globally, per area, or per agent, and **any lever can be waived** by setting
-it to JSON `null`. All agent controls ship waived, to make early agent onboarding easy:
-
-| Lever | Meaning |
+| Control | Meaning |
 |---|---|
-| `cod.enabled` | CoD on or off |
-| `cod.agent.float_limit_ugx` | Max cash an agent may hold; enforced in `claim_task` |
-| `cod.agent.settlement_deadline_h` | Hours allowed before collected cash must be deposited |
-| `cod.agent.deposit_required_ugx` | Security deposit before an agent can take CoD tasks |
-| `cod.agent.verification_required` | Require a verified agent for CoD tasks; enforced in `claim_task` |
+| CoD enabled | CoD can be turned on or off |
+| Float limit | The most cash an agent may hold or have promised to collect at once |
+| Settlement deadline | How long collected cash may be held before it must be deposited |
+| Security deposit | A deposit an agent must put up before taking CoD tasks |
+| Verification required | Only verified agents may take CoD tasks |
 
-`float_limit_ugx` and `verification_required` are enforced in the claim function. The float check counts cash already
-held (ledger) **plus** the cash exposure of tasks the agent has claimed but not yet completed **plus** the task being
-claimed, so an agent cannot stack several claims that individually fit. A claim that expires returns its exposure to
-the pool. When a CoD task completes, the application must post the cash-collection journal in the same transaction, so
-the amount moves from "reserved" to "held" without being counted twice or not at all. Settlement deadline and deposit
-are configuration only so far and need application-level enforcement and reporting.
+**Float limit rule:** cash already held + cash promised on tasks the agent has claimed but not completed + the cash on the
+task being claimed must not exceed the limit. A claim that lapses releases its promised cash. When a CoD task is completed,
+its cash moves from "promised" to "held" exactly once.
 
-## 8. Configuration
+## 7. Invariants
 
-All operational rules live in the `config` table (`key`, `scope`, `scope_id`, `value`). Precedence is
-agent/seller scope, then area, then global. A `null` value means waived. See the seed block at the bottom of
-`db/schema.sql` for every key and its default (pool radii and steps, lease durations, affinity window,
-delivery pricing `route.*`, commissions, CoD levers, coverage gating). Rate values are placeholders for Nyange to set.
+Rules that must always hold, whatever technology implements them.
 
-## 9. System shape
+**Claims**
+1. An order line has at most one seller holding a claim at any time. A task has at most one agent.
+2. Two actors claiming at the same moment each get a definite answer (won, or already taken). Neither fails, hangs or sees an error. This includes two sellers claiming different lines of the same order.
+3. Only an actor in range can claim; the price locked on a line is never above the buyer's approved ceiling.
+4. A claim that is not confirmed in time lapses, and the entry returns to the pool.
+5. Lines of a cancelled order cannot be claimed. If a cancellation and a claim happen at the same moment, one clearly happens first and the outcome is consistent.
+6. Only active sellers and agents can claim, and only if their account is also active. Suspending an account stops its claims.
+7. A seller can only fulfil from a location they own; an offer is always tied to a location of the offering seller.
+8. While a seller holds the exclusive window on an order's lines, others cannot claim them. When it ends, they open to everyone.
 
-A modular monolith, split later only if needed:
+**Rules by area**
+9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to confirmation windows, affinity windows, cash controls and radius schedules alike.
 
-```
-Clients (buyer / seller / agent / admin) -> API + auth (phone OTP, roles)
-   modules: Catalog, Offers, Orders+Pool, Tasks+Pool, Ledger+Wallet, Pricing, Notifications
-   data:    Postgres + PostGIS (source of truth), job runner (scheduler hooks), object storage, notifications (push/SMS/WhatsApp)
-```
+**Money**
+10. Every money movement balances; nothing is created or lost.
+11. Money history is permanent: it cannot be edited, removed or wiped by anyone, including administrators.
+12. A balance can always be re-derived from the history.
+13. The same payment instruction applied twice has the same effect as once.
+14. An agent's cash held plus promised never exceeds their float limit, where a limit is set.
+15. CoD cash is counted exactly once at every moment: as promised, then as held.
 
-- Postgres + PostGIS is the one technology commitment, because radius pools and the ledger need it.
-- Mobile-first and low-bandwidth: compressed images, offline-tolerant agent flows, SMS/WhatsApp fallback.
-- Audit log on state changes and money movements; alerts on stuck pools.
-- Price intelligence: agents capture market prices (`price_observations`), used as a sanity check on offers.
+**Delivery fees**
+16. Only Nyange sets delivery rates; sellers cannot.
+17. Shares of a route add up to 100% of the route cost.
+18. A shipment never pays more than it would travelling alone (when that cap is on), never less than the minimum fee, and is always rounded **up** to the step, never down.
+19. The buyer is never charged a delivery fee outside what they approved at ordering.
 
-## 10. Decisions and open items
+## 8. Tunable rules and parameters
 
-Decided:
-1. Per-line claiming, preferring the same seller and same agent where possible.
-2. Buyer pays delivery on top of item price. Nyange (not sellers) sets the per-km rate; the fee comes from the optimised route (section 4a).
-3. Wallet built in-house. All required licences are assumed in place.
-4. Stack deferred.
-5. Nationwide with radius-capped pools.
-6. Range pricing with a buyer-approved max (section 4).
-7. CoD risk levers all configurable and waivable, shipped waived.
-8. Batching: single optimised route, distance-weighted factors, cost per km (plus optional duration term), agent approach unpriced.
+Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
 
-Open:
-- Application stack and client technology.
-- Placeholder rates: `route.rate_per_km_ugx` (1,500) and `route.rate_per_min_ugx` (0) need real values.
-- Routing provider limits for Uganda (two-wheeler mode, coverage, pricing, storage terms) and the Route Optimization path for multi-buyer rounds.
-- Enforcement of settlement deadline and agent deposit.
-- Service flows (quotes, boda dispatch, print job files).
-- Concurrency test for the claim functions.
+| Parameter | Launch default |
+|---|---|
+| Initial search radius (orders, tasks) | 3 km |
+| Radius widening schedule | 7 km after 2 min; 15 km after 5 min |
+| Confirmation window (seller and agent) | 10 minutes |
+| Seller exclusive window (affinity) | 90 seconds |
+| Agent preference window (affinity) | to be decided |
+| Delivery rate per km | UGX 1,500 (placeholder) |
+| Delivery rate per minute | 0 (off, placeholder) |
+| Dwell allowance per stop | 0 |
+| Share rule | weighted by distance |
+| Minimum delivery fee | 0 |
+| Rounding step | UGX 500 |
+| Cap fee at standalone cost | on |
+| Allowed detour ratio for batching | 1.0 |
+| Checkout estimate road factor | 1.4 |
+| Commission on goods / on delivery | 0% / 0% |
+| CoD enabled | yes |
+| Agent float limit, settlement deadline, security deposit | waived |
+| Verification required for CoD | no |
+| Coverage gating (minimum sellers / agents) | off (1 / 1) |
+
+## 9. Decisions and open questions
+
+**Decided**
+1. Per-line claiming, preferring the same seller and the same agent where possible.
+2. The buyer pays delivery on top of item price. Nyange, not sellers, sets the rates; the fee comes from the optimised route (section 5).
+3. The wallet is built by Nyange. All required licences are assumed in place.
+4. Technology stack: deferred. This document does not depend on it.
+5. Nationwide, with radius-capped pools and areas opening on supply.
+6. Range pricing at checkout with a buyer-approved ceiling; the claim locks the seller's real price.
+7. All CoD controls are tunable and waivable, and ship waived.
+8. Batching: one best route, shares weighted by distance, cost by distance (plus an optional time term), agent's approach to the first pickup not charged.
+
+**Open**
+- Real values for the per-km and per-minute rates (placeholders for now).
+- Cancellation: who may cancel what and when, especially lines already claimed by a seller or already out for delivery.
+- Expiry: how long an unclaimed order line waits before it expires.
+- Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
+- How the buyer's approval covers the delivery fee: a separate ceiling, or part of the line ceilings.
+- What happens to a delivery task that is still unclaimed at the widest radius (cancel, escalate to operations, or keep waiting).
+- Whether the mapping source works well enough for Uganda: coverage outside Kampala, boda (two-wheeler) routing, cost, and rules on storing results. Multi-buyer rounds also need ordering rules such as "pickup before drop".
+- How the settlement deadline and the security deposit are enforced and reported.
+- Service flows: quotes, boda dispatch, print jobs with file proofs.
 - Vehicle class and load limits per task (what a boda can carry decides whether batching is possible).
-
-## 11. Verification status
-
-There is no committed test suite yet; the design is still being settled. What has been checked, by hand, in a
-throwaway PostgreSQL 16 + PostGIS database (the scripts were not kept):
-
-- The pricing function: distance-weighted and equal factors, the duration and dwell terms, the standalone cap, the
-  minimum fee, the batch refusal rule, and exact-boundary rounding.
-- The claim engine and ledger, when first written: single-winner claims, radius, affinity window, price lock, lease
-  release, journal balance, idempotency, immutability, cash-float gate, radius widening.
-- Automated review findings on the first PR revision, each reproduced on the old schema and re-checked after the fix:
-  a two-session deadlock between sellers claiming sibling lines, cumulative cash exposure exceeding the float limit,
-  area-scoped settings ignored by claims and pool widening, an offer pointing at another seller's location, claims on
-  cancelled orders, claims by suspended users, `TRUNCATE` bypassing the append-only ledger, and fee rounding that
-  could move a cost sitting just above a step boundary down onto it.
-- Not yet verified: concurrent claims by one agent (the agent-row lock is untested under concurrency), and behaviour
-  under real load.
-
-A committed automated suite, including concurrency tests, should be written once the design is agreed.
+- The agent preference window length.
