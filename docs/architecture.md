@@ -116,15 +116,44 @@ implementation must satisfy the invariants in section 7.
 3. After delivery, the holds on the money paid for the order end once the reversal window has passed (default 4 hours after delivery), and the money becomes available to each seller and the agent. Nyange keeps its commission and cut.
 4. Sellers and agents withdraw their available money from their wallet to their own mobile money number.
 
-### 4.6 Cancellation, expiry and partial fulfilment
+### 4.6 Cancellation, drop-outs, expiry and partial fulfilment
 
-*Draft: only partial fulfilment was decided so far; the cancellation, expiry and dispute rules below are proposals that need confirmation (section 9).*
+#### Before payment
 
-- A buyer may cancel lines that no seller has claimed yet; cancelling an order cancels all of its unclaimed lines.
-- A line nobody claims within its allowed time expires. The buyer is told and chooses what to do with the rest of the order.
-- If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases nothing has been paid for the order, so nothing is refunded. A payment confirmed after the order was cancelled is **refunded in full** and the order is **never revived**. *(Decided that the buyer can cancel at this point.)* Cancelling after payment is a different case and is open (section 9).
+- A buyer may cancel lines that no seller has claimed yet; cancelling an order cancels all of its unclaimed lines. *(Proposed.)*
+- If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases nothing has been paid for the order, so nothing is refunded. A payment confirmed after the order was cancelled is **refunded in full** and the order is **never revived**. *(Decided.)*
+
+#### Buyer cancels after payment *(decided)*
+
+After payment the buyer can cancel only the **whole order**, not single lines.
+
+| Stage | What the buyer can do |
+|---|---|
+| Paid, no line ready yet | Cancel **free**, with a full refund |
+| Goods ready, not yet picked up | Cancel. A **cancellation fee** compensates the sellers whose goods were ready. **The fee is 0% at launch**, so at launch this is also free |
+| Picked up, out for delivery | Cannot cancel. Refusing delivery becomes a dispute handled by an admin |
+| Delivered | Not cancellable. Any problem is a dispute |
+
+- **Cancellation fee:** a percentage, tunable and waivable, **0% at launch**. *(Proposed base: a percentage of the item price of the lines that were ready, paid to the sellers of those lines.)*
+- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed the task. Any cancellation fee stays with the sellers concerned.
+- **CoD orders:** nothing has been paid, so there is nothing to refund; the same stages apply.
+
+#### A seller drops out after the buyer has approved
+
+- *(Decided.)* The line goes back to the pool for a limited time and the buyer is told. The dropped seller's credit for that line is taken back and held by Nyange until a replacement seller claims the line or the buyer is refunded.
+- *(Proposed.)* If a replacement claims and the order total is unchanged or lower, the order carries on. If the total would be higher (a pricier seller, or a changed delivery fee), the buyer must re-approve within a short window, otherwise the order is cancelled with a full refund.
+- *(Proposed.)* If nobody claims the line in time, the buyer chooses: cancel the whole order with a full refund, or carry on without that line and be refunded for it.
+
+#### An agent drops out
+
+- Before pickup: the task goes back to the pool, the agent's credit is taken back, and the buyer sees at most a delay.
+- After pickup: the agent holds the goods (and cash, for CoD), so this is an incident for an admin to resolve *(open)*.
+
+#### Expiry, partial fulfilment and disputes
+
+- A line nobody claims within its allowed time expires. The buyer is told and chooses what to do with the rest of the order. *(Draft.)*
 - Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
-- If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution.
+- If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution. *(Draft.)*
 
 ## 5. Delivery pricing
 
@@ -172,7 +201,8 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Agent claims the delivery task | Nyange → agent's wallet (fee less cut, **on hold**) |
 | Agent drops the task before delivery | The agent's credit is taken back (hold consumed) and returns to Nyange; it passes to the next agent who claims |
 | Delivery completed | The holds end after the reversal window (default 4 hours after delivery); the money becomes available |
-| Order cancelled after payment *(proposed)* | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet |
+| Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which stays with the sellers of the ready lines |
+| Seller drops a line before delivery | The seller's credit for that line is taken back (hold consumed) and held by Nyange until a replacement seller claims it (credited on hold) or the buyer is refunded |
 | Payment confirmed after the order was cancelled | Returned in full to the buyer's wallet; it never reaches sellers or the agent |
 | Agent collects CoD cash | Agent's cash-in-hand ↑ (agent owes Nyange the cash); at delivery, sellers' and the agent's wallets are credited on hold, funded by Nyange |
 | Agent settles cash owed *(proposed)* | Agent's wallet → Nyange. The agent funds their wallet from earnings, by a mobile money top-up, or by handing cash to a cash-deposit agent |
@@ -265,6 +295,11 @@ Rules that must always hold, whatever technology implements them.
 33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
 
+**Cancellation**
+35. After payment the buyer can cancel only the whole order, and only before pickup. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
+36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nobody can withdraw it first.
+37. A line dropped by a seller returns to the pool. The dropped seller keeps nothing for it, and the money for that line stays with Nyange until a replacement claims it or the buyer is refunded.
+
 ## 8. Tunable rules and parameters
 
 Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
@@ -280,6 +315,9 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Hold period on reversible transactions (the reversal window) | 4 hours, running from delivery for order payments (per transaction type, waivable) |
 | Payment cut-off before the deadline (new attempts stop) | to be decided |
 | Grace for a payment in progress at the deadline | to be decided |
+| Cancellation fee after goods are ready | 0% (tunable, waivable) |
+| How long a dropped line waits for a replacement seller | to be decided |
+| Buyer re-approval window when a replacement changes the total | to be decided (proposed: 15 minutes) |
 | Final-fee notification channels | push and durable in-app |
 | Agent preference window (affinity) | to be decided |
 | Delivery rate per km | UGX 1,500 (placeholder) |
@@ -320,10 +358,15 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 18. Mobile money top-ups carry no hold.
 19. One wallet per user, shared across all their roles.
 20. A user cannot fulfil their own order (claim its lines or deliver it).
+21. After payment the buyer can cancel only the whole order: free before any line is ready, with a cancellation fee once goods are ready (fee 0% at launch), and not at all once the goods are picked up (then it is a dispute).
+22. A seller who drops out after approval: the line goes back to the pool.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
-- Cancellation: who may cancel what and when, especially lines already claimed by a seller or already out for delivery.
+- Sellers withdrawing a claim before the buyer has decided or paid, and agents dropping a task after pickup (goods and cash in their hands).
+- Penalties for sellers and agents who drop out after the buyer has approved.
+- How long a dropped line waits for a replacement, the buyer's re-approval window if a replacement changes the total, and whether the buyer may keep the rest of the order if no replacement comes.
+- The base of the cancellation fee (proposed: the item price of the lines already ready), compensating an agent already travelling when the buyer cancels, and how a fee is collected from a CoD buyer who has paid nothing.
 - Expiry: how long an unclaimed order line waits before it expires.
 - Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
 - The payment cut-off before the deadline and the grace for a payment in progress at the deadline: how long each should be.
@@ -332,9 +375,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - How cash-deposit and cash-withdrawal agents move wallets, and how an agent's CoD cash owed is settled; whether earnings may be netted against cash owed.
 - Whether withdrawals may go only to the actor's own verified mobile money number (proposed).
 - Provider charges on mobile money payments, refunds and withdrawals: who bears them.
-- Cancelling after payment is confirmed or after goods are ready: who may cancel, refund rules, and who bears any cost.
 - Whether agents see the delivery task before the goods are ready, or only once they are.
-- If a seller drops out of a line after the buyer has approved, what happens to the order.
 - When some lines expire or are cancelled, whether the final fee is fixed over the remaining lines, and when an order stops waiting for stragglers.
 - Whether agent affinity is still needed now that one route is planned for the whole order, or only for shipments delivered separately.
 - What happens to a delivery task that is still unclaimed at the widest radius (cancel, escalate to operations, or keep waiting).
