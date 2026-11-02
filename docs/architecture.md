@@ -167,7 +167,7 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 
 #### Expiry, partial fulfilment and disputes
 
-- A line nobody claims within **30 minutes** of entering the pool (or re-entering it) expires. *(Decided.)* The buyer is told and chooses within 15 minutes between cancelling the whole order and carrying on without that line; no choice cancels the order. *(Proposed: same pattern as a dropped line with no replacement.)*
+- A line nobody claims within **30 minutes** of entering the pool (or re-entering it) expires. *(Decided.)* The buyer is told and chooses within 15 minutes between cancelling the whole order and carrying on without that line; no choice cancels the order.
 - Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
 - If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution. *(Draft.)*
 
