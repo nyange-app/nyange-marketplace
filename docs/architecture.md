@@ -152,7 +152,7 @@ becomes the agent's reward for the delivery.
 
 ### 6.1 Wallets *(decided)*
 
-- Every buyer, seller and field agent has a Nyange wallet. Nyange also has its own account for its commission and cuts.
+- Every user has a Nyange wallet (every user is a buyer by default; seller and agent are added roles). Nyange also has its own account for its commission and cuts.
 - **All digital money lands in a wallet first.** It leaves only by withdrawal from the wallet through the mobile money rail.
 - **When a buyer pays an order by mobile money, each seller's share lands directly in that seller's wallet.** The buyer does not load their own wallet first. The delivery fee lands with Nyange and passes to the delivery agent's wallet when they claim the task.
 - **Everyone can top up their wallet from mobile money**, whatever their role (buyer, seller or agent).
