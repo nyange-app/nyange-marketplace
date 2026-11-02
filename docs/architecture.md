@@ -131,7 +131,7 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 | Stage | What the buyer can do |
 |---|---|
 | Paid, no line ready yet | Cancel **free**, with a full refund |
-| Goods ready, not yet picked up | Cancel. A **cancellation fee** compensates the sellers whose goods were ready. **The fee is 0% at launch**, so at launch this is also free |
+| Goods ready, not yet picked up | Cancel. A **cancellation fee** compensates the sellers whose goods were ready. **The fee is 0% at launch**, so at launch this is also free. No fee ever applies while no agent has claimed the delivery task |
 | Picked up, out for delivery | Cannot cancel. Refusing delivery becomes a dispute handled by an admin |
 | Delivered | Not cancellable. Any problem is a dispute |
 
@@ -160,6 +160,16 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 - *(Decided.)* If nobody claims the line within the 30 minutes, the buyer chooses within 15 minutes: cancel the whole order with a full refund, or carry on without that line and be refunded for it. No choice within the 15 minutes cancels the order (silence cancels, as elsewhere).
 
 - **Penalties** for a seller or agent who drops out after the buyer has approved are a tunable rule (amount, and whether they apply at all). **They are waived at launch.**
+
+#### No agent claims the delivery task *(decided)*
+
+The delivery task is offered within a radius that widens (3 km, then 7 km after 2 minutes, then 15 km after 5 minutes). There is no price lever, because the delivery fee comes from the route.
+
+1. **Ten minutes after the widest radius is reached** with no claim, the task is flagged to operations (admins), and the buyer is told at the same moment. Operations can assign a specific agent directly (even outside the radius), widen the radius further, or contact the parties.
+2. The buyer chooses: keep waiting, or cancel with a full refund. Self-collection by the buyer is not offered.
+3. **While no agent has claimed the delivery task, the buyer can cancel with a full refund and no cancellation fee**, even if goods are ready, because the failure to find an agent is not the buyer's.
+4. **Hard deadline: 60 minutes after the task was first offered.** If no agent has claimed it by then, the order is cancelled automatically: the holds are consumed, the buyer is refunded in full, and sellers are released with no penalty.
+5. Sellers who had readied goods are not compensated at launch (the cancellation fee is 0% anyway). If a cancellation fee is ever introduced, it never applies when the cause is that no agent was found.
 
 #### An agent drops out
 
@@ -340,6 +350,11 @@ Rules that must always hold, whatever technology implements them.
 44. A dispute keeps the disputed money on hold until an admin decides; undisputed money is released normally.
 45. A dispute outcome moves money only through the holds and wallets, and refunds go to the buyer's wallet.
 
+**Unclaimed delivery**
+46. While no agent has claimed an order's delivery task, the buyer can cancel with a full refund and no cancellation fee.
+47. A delivery task still unclaimed 60 minutes after it was first offered is cancelled automatically with a full refund to the buyer; sellers are released without penalty.
+48. Ten minutes after a delivery task has reached its widest radius unclaimed, operations are alerted and the buyer is told.
+
 ## 8. Tunable rules and parameters
 
 Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
@@ -356,6 +371,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Dispute window | until the reversal window ends (4 hours after delivery) |
 | Response period for the other parties in a dispute | 24 hours |
 | Proof of delivery | photo plus the buyer's code |
+| Escalate an unclaimed delivery task to operations, after the widest radius is reached | 10 minutes |
+| Hard deadline for an agent to claim a delivery task | 60 minutes after it was first offered |
 | Hold period on reversible transactions (the reversal window) | 4 hours, running from delivery for order payments (per transaction type, waivable) |
 | Payment cut-off before the deadline (new attempts stop) | to be decided |
 | Grace for a payment in progress at the deadline | to be decided |
@@ -414,6 +431,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 28. Disputes: any party to an order can raise one, about specific lines and/or the delivery fee, from pickup to the end of the reversal window; the holds on the disputed amounts are extended; the other parties have 24 hours to respond; an admin decides.
 29. Delivery requires proof (a photo plus a code the buyer gives at the door).
 30. When an agent is at fault in a dispute, who bears the loss is decided case by case by the admin.
+31. An unclaimed delivery task: operations and the buyer are alerted 10 minutes after the widest radius is reached; the buyer can wait or cancel free (no fee) while no agent has claimed; a hard deadline of 60 minutes cancels the order with a full refund.
+32. Self-collection by the buyer is not offered.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
@@ -430,7 +449,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Whether agents see the delivery task before the goods are ready, or only once they are.
 - When some lines expire or are cancelled, whether the final fee is fixed over the remaining lines, and when an order stops waiting for stragglers.
 - Whether agent affinity is still needed now that one route is planned for the whole order, or only for shipments delivered separately.
-- What happens to a delivery task that is still unclaimed at the widest radius (cancel, escalate to operations, or keep waiting).
+- What happens to unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
 - Whether the mapping source works well enough for Uganda: coverage outside Kampala, boda (two-wheeler) routing, cost, and rules on storing results. Multi-buyer rounds also need ordering rules such as "pickup before drop".
 - How the settlement deadline and the security deposit are enforced and reported.
 - Service flows: quotes, boda dispatch, print jobs with file proofs.
