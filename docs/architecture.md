@@ -89,7 +89,7 @@ implementation must satisfy the invariants in section 7.
 1. When **all of the order's lines are claimed**, Nyange works out the best route and fixes the **final delivery fee** (section 5). Lines from the same seller location form one shipment; shipments from different sellers may share one route.
 2. The buyer is **notified of the final delivery fee** and the order total through **both a push notification and a durable in-app notification**, and has **15 minutes** to **approve or cancel** the whole order. They may cancel if the fee is higher than they are willing to pay.
 3. If the buyer **approves**:
-   - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**. Sellers **ready their goods for pickup only after payment is confirmed**. If payment is not confirmed within the 60 minutes, the order is cancelled and every seller is released.
+   - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**. Sellers **ready their goods for pickup only after payment is confirmed**. If payment is not confirmed within the 60 minutes, the order is cancelled and every seller is released. The buyer is shown the payment deadline. To avoid late confirmations, *(proposed)* new payment attempts close a short time before the deadline, and an attempt already in progress at the deadline gets a short grace for the provider's answer instead of being cut off: if it succeeds the order proceeds, if it fails the order is cancelled.
    - *CoD:* there is nothing to pay up front, so sellers ready their goods straight away.
 4. If the buyer **cancels**, or the 15 minutes pass with no decision (**silence cancels**), the order is cancelled and every seller is released. Nothing has been prepared yet, so nobody is out of pocket.
 5. The delivery task is then offered to agents. *(Proposed timing: once the buyer has approved and, for prepaid orders, payment is confirmed. Whether agents may see it before the goods are ready is open, section 9.)*
@@ -117,7 +117,7 @@ implementation must satisfy the invariants in section 7.
 
 - A buyer may cancel lines that no seller has claimed yet; cancelling an order cancels all of its unclaimed lines.
 - A line nobody claims within its allowed time expires. The buyer is told and chooses what to do with the rest of the order.
-- If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases no payment has been confirmed, so nothing is refunded. *(Decided that the buyer can cancel at this point.)* Cancelling after payment is a different case and is open (section 9).
+- If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases no payment has been confirmed, so nothing is refunded. If a payment is nonetheless confirmed after the order was cancelled, it is **refunded in full** and the order is **never revived**. *(Decided that the buyer can cancel at this point.)* Cancelling after payment is a different case and is open (section 9).
 - Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
 - If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution.
 
@@ -162,6 +162,7 @@ becomes the agent's reward for the delivery.
 | Line completed | Nyange-held funds → seller (price less commission) + Nyange revenue (commission) |
 | Delivery completed | Nyange-held funds → agent (fee less cut) + Nyange revenue (cut) |
 | Withdrawal | Seller or agent balance → provider |
+| Payment confirmed after the order was cancelled | Nyange-held funds → buyer (full refund) |
 
 ### 6.2 Cash on delivery controls
 
@@ -216,6 +217,7 @@ Rules that must always hold, whatever technology implements them.
 21. No delivery task is offered to agents before the buyer has approved the final fee and, for prepaid orders, payment is confirmed.
 22. For prepaid orders, sellers ready goods for pickup only after payment is confirmed. For CoD orders, only after the buyer has approved. No seller prepares goods before the buyer has approved.
 23. An order that is not approved within 15 minutes, or (prepaid) not paid within 60 minutes of approval, is cancelled and every seller is released.
+24. A cancelled order is never revived. Any payment confirmed for an order that is already cancelled is refunded in full.
 
 ## 8. Tunable rules and parameters
 
@@ -229,6 +231,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
 | Prepaid payment window after approval | 60 minutes (no confirmed payment cancels) |
+| Payment cut-off before the deadline (new attempts stop) | to be decided |
+| Grace for a payment in progress at the deadline | to be decided |
 | Final-fee notification channels | push and durable in-app |
 | Agent preference window (affinity) | to be decided |
 | Delivery rate per km | UGX 1,500 (placeholder) |
@@ -260,13 +264,15 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 9. The delivery fee is final only after all of the order's lines are claimed. The buyer is notified (push and in-app) and has 15 minutes to approve or cancel the order.
 10. After approval a prepaid buyer pays the full total. Sellers ready the goods for pickup only after payment is confirmed (prepaid) or straight after approval (CoD).
 11. Silence cancels: no decision within 15 minutes cancels the order, and a prepaid order with no confirmed payment within 60 minutes of approval is cancelled.
+12. A payment confirmed after its order was cancelled is refunded in full; the order is never revived. Preventing such late payments is preferred (cut-off and grace, section 4.3).
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
 - Cancellation: who may cancel what and when, especially lines already claimed by a seller or already out for delivery.
 - Expiry: how long an unclaimed order line waits before it expires.
 - Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
-- A payment that is confirmed late, after the order was cancelled for lateness (mobile money confirmations can lag): refund it, or allow the order to be revived.
+- The payment cut-off before the deadline and the grace for a payment in progress at the deadline: how long each should be.
+- Refunds of late payments: how quickly they are returned, and who bears any provider charges.
 - Cancelling after payment is confirmed or after goods are ready: who may cancel, refund rules, and who bears any cost.
 - Whether agents see the delivery task before the goods are ready, or only once they are.
 - If a seller drops out of a line after the buyer has approved, what happens to the order.
