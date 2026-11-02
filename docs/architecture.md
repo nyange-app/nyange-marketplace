@@ -43,6 +43,7 @@ implementation must satisfy the invariants in section 7.
 - **Confirmation window:** how long a claimant has to confirm before the claim lapses and the entry returns to the pool.
 - **Wallet:** every user has one. All digital money lands in it first.
 - **Hold:** a time-limited restriction on part of a wallet's money, recorded as its own object, placed on transactions that may still be reversed (section 6.3).
+- **Dispute:** a recorded objection by a party to an order about specific lines and/or the delivery fee, which keeps the disputed money on hold until an admin decides (section 4.6).
 - **Area:** a named region of the country. Rules can be set per area and override the national defaults for anything
   located inside that area.
 
@@ -109,7 +110,7 @@ implementation must satisfy the invariants in section 7.
 
 ### 4.5 Delivery and settlement
 
-1. The agent collects the goods, delivers them, and records the outcome.
+1. The agent collects the goods, delivers them, and records **proof of delivery** (a photo plus a code the buyer gives at the door) and the outcome.
 2. **Payment:**
    - *Mobile money / wallet:* the buyer's payment has already landed in the wallets of the sellers and the delivery agent, on hold (section 4.3).
    - *CoD:* the agent collects cash at the drop-off. The agent now owes that cash to Nyange until they settle it. At delivery, Nyange credits the sellers' and the agent's wallets (on hold).
@@ -165,11 +166,22 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 - Before pickup: the task goes back to the pool, the agent's credit is taken back, and the buyer sees at most a delay.
 - After pickup: the agent holds the goods (and cash, for CoD), so this is an incident for an admin to resolve *(open)*.
 
-#### Expiry, partial fulfilment and disputes
+#### Expiry and partial fulfilment
 
 - A line nobody claims within **30 minutes** of entering the pool (or re-entering it) expires. *(Decided.)* The buyer is told and chooses within 15 minutes between cancelling the whole order and carrying on without that line; no choice cancels the order.
 - Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
-- If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution. *(Draft.)*
+
+#### Disputes *(decided)*
+
+- **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller).
+- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; other. The party gives a reason and evidence (photos, notes).
+- **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
+- **When:** from pickup until the reversal window ends (4 hours after delivery). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
+- **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
+- **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
+- **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
+- **Proof of delivery:** the agent must record it (a photo plus the code the buyer gives at the door), so a "not received" claim can be decided.
+- Problems discovered after the window has closed (for example a faulty LPG cylinder found the next day) are not covered at launch.
 
 ## 5. Delivery pricing
 
@@ -217,6 +229,8 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Agent claims the delivery task | Nyange → agent's wallet (fee less cut, **on hold**) |
 | Agent drops the task before delivery | The agent's credit is taken back (hold consumed) and returns to Nyange; it passes to the next agent who claims |
 | Delivery completed | The holds end after the reversal window (default 4 hours after delivery); the money becomes available |
+| Dispute raised | The holds on the disputed amounts are extended until the admin decides |
+| Dispute decided | Refund: held money consumed and returned to the buyer's wallet; otherwise released to the seller and agent; or a split |
 | Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which stays with the sellers of the ready lines |
 | Seller drops a line before delivery | The seller's credit for that line is taken back (hold consumed) and held by Nyange until a replacement seller claims it (credited on hold) or the buyer is refunded |
 | Payment confirmed after the order was cancelled | Returned in full to the buyer's wallet; it never reaches sellers or the agent |
@@ -320,6 +334,12 @@ Rules that must always hold, whatever technology implements them.
 40. If a seller withdraws while the buyer is deciding on the final fee, that fee is void: the buyer is told, and gets a fresh notification and a fresh 15 minutes once a new final fee is fixed.
 41. An unclaimed line expires 30 minutes after it enters (or re-enters) the pool.
 
+**Delivery proof and disputes**
+42. A delivery is recorded only with proof (a photo plus the code the buyer gives at the door).
+43. Only a party to an order can raise a dispute, about specific lines and/or the delivery fee, from pickup until the reversal window ends.
+44. A dispute keeps the disputed money on hold until an admin decides; undisputed money is released normally.
+45. A dispute outcome moves money only through the holds and wallets, and refunds go to the buyer's wallet.
+
 ## 8. Tunable rules and parameters
 
 Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
@@ -333,6 +353,9 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
 | Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal) |
 | Time an unclaimed line waits before it expires | 30 minutes |
+| Dispute window | until the reversal window ends (4 hours after delivery) |
+| Response period for the other parties in a dispute | 24 hours |
+| Proof of delivery | photo plus the buyer's code |
 | Hold period on reversible transactions (the reversal window) | 4 hours, running from delivery for order payments (per transaction type, waivable) |
 | Payment cut-off before the deadline (new attempts stop) | to be decided |
 | Grace for a payment in progress at the deadline | to be decided |
@@ -388,12 +411,16 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 25. If no replacement seller claims a dropped line within 30 minutes, the buyer chooses within 15 minutes between cancelling the whole order (full refund) and carrying on without that line (refund for it); no choice cancels the order.
 26. A seller may withdraw a claim before payment: free until the fee is final; a withdrawal during the buyer's decision voids the fee and restarts their 15 minutes; after approval it is handled as a drop-out, with payment paused and a fresh 60 minutes once the order is whole again. A seller cannot re-claim a line they withdrew.
 27. An unclaimed line expires after 30 minutes in the pool.
+28. Disputes: any party to an order can raise one, about specific lines and/or the delivery fee, from pickup to the end of the reversal window; the holds on the disputed amounts are extended; the other parties have 24 hours to respond; an admin decides.
+29. Delivery requires proof (a photo plus a code the buyer gives at the door).
+30. When an agent is at fault in a dispute, who bears the loss is decided case by case by the admin.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
 - Agents dropping a task after pickup (goods and cash in their hands).
 - The base of the cancellation fee (proposed: the item price of the lines already ready), compensating an agent already travelling when the buyer cancels, and how a fee is collected from a CoD buyer who has paid nothing.
-- Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
+- Whether a party can appeal an admin's dispute decision. The admin's decision settles the dispute until that is decided.
+- Whether problems found after the dispute window closes (for example a faulty LPG cylinder found the next day) should get some recourse.
 - The payment cut-off before the deadline and the grace for a payment in progress at the deadline: how long each should be.
 - Refunds of late payments: how quickly they are returned, and who bears any provider charges.
 - What an open dispute does to holds (proposed: the hold is extended until resolved), and what happens when a refund is due after a hold has ended and the money has been withdrawn.
