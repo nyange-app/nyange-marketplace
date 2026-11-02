@@ -135,10 +135,7 @@ create table seller_locations (
     seller_id       uuid not null references sellers(id),
     name            text not null,
     geom            geography(Point, 4326) not null,
-    max_radius_m    integer not null check (max_radius_m > 0),
-    -- seller-set delivery fee: base + per-km. Market forces apply: agents decide whether to claim.
-    delivery_base_fee_ugx  bigint not null default 0 check (delivery_base_fee_ugx >= 0),
-    delivery_per_km_ugx    bigint not null default 0 check (delivery_per_km_ugx >= 0)
+    max_radius_m    integer not null check (max_radius_m > 0)
 );
 create index seller_locations_geom_idx on seller_locations using gist (geom);
 
@@ -256,6 +253,36 @@ create table task_stops (
     shipment_id   uuid references shipments(id),
     completed_at  timestamptz,
     unique (task_id, seq)
+);
+
+-- Delivery pricing audit trail. One route quote per delivery task: the optimised route
+-- (from the routing provider) plus the per-shipment factors and fees derived from it.
+create table route_quotes (
+    id               uuid primary key default gen_random_uuid(),
+    task_id          uuid references tasks(id),         -- null for checkout estimates
+    is_estimate      boolean not null default false,    -- straight-line x circuity, no provider call
+    provider         text not null,                     -- e.g. 'google', 'estimate'
+    travel_mode      text,
+    stop_order       jsonb not null,                    -- ordered stops as returned by the optimiser
+    distance_m       integer not null check (distance_m >= 0),
+    duration_s       integer not null check (duration_s >= 0),
+    rate_per_km_ugx  bigint not null,                   -- rates in force when quoted
+    rate_per_min_ugx bigint not null,
+    factor_mode      text not null,
+    route_cost_ugx   bigint not null,
+    created_at       timestamptz not null default now()
+);
+
+create table route_quote_shipments (
+    route_quote_id        uuid not null references route_quotes(id),
+    shipment_id           uuid not null references shipments(id),
+    standalone_distance_m integer not null,
+    standalone_duration_s integer not null,
+    factor                numeric(10,9) not null check (factor between 0 and 1),
+    standalone_fee_ugx    bigint not null,
+    fee_ugx               bigint not null,
+    capped                boolean not null,
+    primary key (route_quote_id, shipment_id)
 );
 
 -- Field-captured market prices: sanity check for offers and a data asset on its own.
@@ -483,6 +510,103 @@ begin
 end $$;
 
 -- ---------------------------------------------------------------------------
+-- Delivery pricing. The routing provider (Google, in the application layer) supplies the
+-- optimised route distance/duration and each shipment's standalone distance/duration.
+-- Nyange alone sets the rates; there is no seller override.
+--
+--   route_cost = km * rate_per_km + minutes * rate_per_min        (minutes include dwell per stop)
+--   fee_i      = ceil_to_step( factor_i * route_cost )
+--   factor_i   = share of the route; sum of factors = 1
+--                mode 'distance' (default): standalone_km_i / sum(standalone_km)
+--                mode 'equal'             : 1 / n
+--                mode 'cost'              : standalone_cost_i / sum(standalone_cost)
+--   then: fee_i = least(fee_i, standalone_fee_i) if route.cap_at_standalone, and >= route.min_fee_ugx.
+-- The agent's approach to the first pickup is not priced.
+-- ---------------------------------------------------------------------------
+create function compute_route_fees(
+    p_route_distance_m integer,
+    p_route_duration_s integer,
+    p_shipment_ids     uuid[],
+    p_standalone_m     integer[],      -- each shipment's own pickup->drop distance, same order as ids
+    p_standalone_s     integer[],      -- ... and duration
+    p_area             uuid default null,
+    p_stop_count       integer default null   -- stops on the route (dwell applies per stop); default = shipments + 1
+)
+returns table (shipment_id uuid, factor numeric, fee_ugx bigint, standalone_fee_ugx bigint, capped boolean)
+language plpgsql stable as $$
+declare
+    n         integer := coalesce(array_length(p_shipment_ids, 1), 0);
+    v_km      numeric := coalesce((config_get('route.rate_per_km_ugx',  p_area))::numeric, 0);
+    v_min     numeric := coalesce((config_get('route.rate_per_min_ugx', p_area))::numeric, 0);
+    v_dwell   numeric := coalesce((config_get('route.dwell_s_per_stop', p_area))::numeric, 0);
+    v_mode    text    := coalesce(config_get('route.factor_mode', p_area) #>> '{}', 'distance');
+    v_floor   numeric := coalesce((config_get('route.min_fee_ugx',      p_area))::numeric, 0);
+    v_step    numeric := greatest(coalesce((config_get('route.round_to_ugx', p_area))::numeric, 1), 1);
+    v_cap     boolean := coalesce((config_get('route.cap_at_standalone', p_area))::boolean, true);
+    v_stops   integer := coalesce(p_stop_count, n + 1);
+    v_route_cost numeric;
+begin
+    if n = 0 then raise exception 'no shipments'; end if;
+    if array_length(p_standalone_m, 1) is distinct from n or array_length(p_standalone_s, 1) is distinct from n then
+        raise exception 'shipment, distance and duration arrays must have equal length';
+    end if;
+    if v_mode not in ('distance', 'equal', 'cost') then
+        raise exception 'unknown route.factor_mode %', v_mode;
+    end if;
+
+    v_route_cost := p_route_distance_m / 1000.0 * v_km
+                  + (p_route_duration_s + v_dwell * v_stops) / 60.0 * v_min;
+
+    return query
+    with base as (
+        select ids.id, ids.ord,
+               p_standalone_m[ids.ord] as d_m,
+               -- standalone trip = pickup + drop, so two stops of dwell
+               (p_standalone_m[ids.ord] / 1000.0 * v_km
+                + (p_standalone_s[ids.ord] + v_dwell * 2) / 60.0 * v_min) as solo_cost
+        from unnest(p_shipment_ids) with ordinality as ids(id, ord)
+    ), shares as (
+        -- factor kept as numerator/denominator so fees multiply before dividing: a share that
+        -- should land exactly on a rounding step must not pick up a repeating-decimal error.
+        select b.*,
+               case
+                 when v_mode = 'equal' then 1::numeric
+                 when v_mode = 'cost' and sum(b.solo_cost) over () > 0 then b.solo_cost
+                 when v_mode = 'distance' and sum(b.d_m) over () > 0 then b.d_m::numeric
+                 else 1::numeric         -- degenerate input (all zero): fall back to equal shares
+               end as f_num,
+               case
+                 when v_mode = 'equal' then n::numeric
+                 when v_mode = 'cost' and sum(b.solo_cost) over () > 0 then sum(b.solo_cost) over ()
+                 when v_mode = 'distance' and sum(b.d_m) over () > 0 then sum(b.d_m) over ()::numeric
+                 else n::numeric
+               end as f_den
+        from base b
+    ), priced as (
+        select sh.*,
+               sh.f_num / sh.f_den as f,
+               greatest(v_floor, ceil(round(sh.solo_cost, 4) / v_step) * v_step) as solo_fee,
+               greatest(v_floor, ceil(round(v_route_cost * sh.f_num / sh.f_den, 4) / v_step) * v_step) as share_fee
+        from shares sh
+    )
+    select pr.id,
+           pr.f,
+           (case when v_cap then least(pr.share_fee, pr.solo_fee) else pr.share_fee end)::bigint,
+           pr.solo_fee::bigint,
+           (v_cap and pr.share_fee > pr.solo_fee)
+    from priced pr
+    order by pr.ord;
+end $$;
+
+-- Batching is only worthwhile if the combined route is not longer than the trips it replaces
+-- (times route.max_detour_ratio; a null/waived ratio always allows batching).
+create function route_batch_ok(p_route_distance_m integer, p_standalone_m integer[], p_area uuid default null)
+returns boolean language sql stable as $$
+    select coalesce(p_route_distance_m <= (config_get('route.max_detour_ratio', p_area))::numeric
+                                          * (select sum(x) from unnest(p_standalone_m) x), true)
+$$;
+
+-- ---------------------------------------------------------------------------
 -- Default configuration. Agent gates start waived (null) to ease onboarding.
 -- ---------------------------------------------------------------------------
 insert into config (key, value) values
@@ -493,9 +617,17 @@ insert into config (key, value) values
     ('claim.order_line.lease_s',              '600'),
     ('claim.task.lease_s',                    '600'),
     ('claim.affinity.exclusive_window_s',     '90'),
-    ('delivery.fee.floor_ugx',                'null'),   -- waived: market decides
-    ('delivery.fee.cap_ugx',                  'null'),   -- waived: market decides
-    ('delivery.fee.bump_allowed',             'true'),   -- seller may raise an unclaimed task's reward
+    -- delivery pricing (rate values are PLACEHOLDERS to be set by Nyange before launch)
+    ('route.provider',                        '"google"'),
+    ('route.rate_per_km_ugx',                 '1500'),
+    ('route.rate_per_min_ugx',                '0'),      -- duration term off until a rate is chosen
+    ('route.dwell_s_per_stop',                '0'),
+    ('route.factor_mode',                     '"distance"'),
+    ('route.min_fee_ugx',                     '0'),
+    ('route.round_to_ugx',                    '500'),
+    ('route.cap_at_standalone',               'true'),
+    ('route.max_detour_ratio',                '1.0'),
+    ('route.circuity_factor',                 '1.4'),    -- straight-line -> road estimate at checkout
     ('platform.commission.goods_bps',         '0'),
     ('platform.commission.delivery_bps',      '0'),
     ('cod.enabled',                           'true'),

@@ -21,7 +21,7 @@ application stack is deliberately undecided (see "Decisions and open items").
 | Actor | Role |
 |---|---|
 | Buyer | Orders from the Nyange catalog. Never picks a seller. |
-| Seller | Keeps standing offers (price, stock, service radius, delivery fee) on catalog variants. Claims order lines. |
+| Seller | Keeps standing offers (price, stock, service radius) on catalog variants. Does not set delivery fees. Claims order lines. |
 | Field agent | Claims tasks from a pool. Capabilities (delivery, price capture, cash deposit/withdrawal, payment collection, more later) are data, not code. |
 | Admin | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, tunes configuration. |
 
@@ -60,10 +60,40 @@ Field agent <------------------ claim ------------------ [TASK POOL: delivery | 
 - **Agent affinity:** a delivery task may name a `preferred_agent_id` (an agent already handling a sibling shipment of
   the same order) with a preference window. Multi-pickup tasks use ordered `task_stops`.
 - **Partial fulfilment:** lines can expire or be cancelled independently. The buyer is told and chooses.
-- **Delivery fee:** the seller sets it (base + per km on the seller location). The buyer pays it on top of item
-  price. It becomes the task reward the agent sees. There is no floor or cap by default: if a fee is too low, agents
-  simply won't claim the task, and the seller may raise an unclaimed task's reward. Floor and cap exist as optional
-  config (`delivery.fee.floor_ugx` / `cap_ugx`, waived by default).
+- **Delivery fee:** computed by Nyange from the optimised route (section 4a). It is paid by the buyer on top of the item price and becomes the task reward the agent sees.
+
+## 4a. Delivery pricing
+
+Nyange alone sets the rates; sellers have no say in delivery fees. A routing provider (Google, behind an interface so
+it can be swapped) supplies the geography; the money rules live in `compute_route_fees` in `db/schema.sql`.
+
+1. Once lines are claimed and grouped into shipments, the provider returns one optimised route over all stops:
+   total distance `D` and duration `T`, plus each shipment's own standalone pickup-to-drop distance and duration.
+2. Route cost = `D (km) x rate_per_km + (T + dwell x stops) (min) x rate_per_min`.
+   The duration term lets slow, congested routes cost more than short fast ones. It ships at rate 0 (off) until
+   Nyange chooses a rate.
+3. Each shipment gets a factor, and the factors sum to 1. Default **distance-weighted**:
+   `standalone_km_i / sum(standalone_km)`. Alternatives: `equal`, and `cost` (weighted by standalone distance + time cost).
+4. Fee = `factor x route cost`, rounded up to a step (default UGX 500), at least `route.min_fee_ugx`, and **never more
+   than that shipment would pay travelling alone** (`route.cap_at_standalone`).
+5. `route_batch_ok` refuses to batch when the combined route is longer than the trips it replaces
+   (`route.max_detour_ratio`, default 1.0; null waives it).
+6. The agent's approach to the first pickup is **not** priced.
+
+Worked example (rate UGX 1,500/km, no duration term): shipments A (8 km alone) and B (9 km alone), combined route 12 km.
+Route cost 18,000. Factors 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 alone.
+
+Estimates and audit:
+- At checkout, before any seller claims, the fee is estimated as straight-line distance x `route.circuity_factor`
+  (default 1.4, to be calibrated against real routes). This needs no provider call.
+- The real route is requested only after claims, and stored in `route_quotes` / `route_quote_shipments` with the rates,
+  factors and resulting fees in force, so any fee can be explained in a dispute.
+- The buyer's approved ceiling covers the difference between estimate and final fee.
+
+Provider notes (to verify before relying on them): Google's Routes API can optimise the order of intermediate stops,
+but that does not enforce "pickup before drop"; multi-buyer rounds need the Route Optimization API or our own solver.
+Check whether a two-wheeler travel mode is supported for Uganda (otherwise car routing approximates boda routes), the
+current pricing and a spend alert, and Google's terms on storing results. Road data is weaker outside Kampala.
 
 ## 5. Claim engine
 
@@ -106,10 +136,9 @@ Typical flows:
 Mobile money providers are the rails only (collection and payout). A reconciliation job against provider statements
 is required.
 
-**Regulatory flag (needs a lawyer):** holding stored value for users may fall under Bank of Uganda payment-system
-rules (National Payment Systems Act 2020). Get this confirmed by a Ugandan fintech lawyer before launch. Planned
-mitigations: keep the wallet closed-loop (spend on Nyange, withdraw to mobile money), and hold customer funds in a
-segregated escrow bank account backed by the ledger.
+**Licence:** Nyange already holds the digital wallet licence. To confirm: the licence scope should cover holding buyer
+funds in escrow and paying out to sellers and agents, not only buyer wallets. The ledger is provider-agnostic, and
+mobile money providers remain the collection and payout rails.
 
 ## 7. Cash on delivery and agent risk
 
@@ -133,7 +162,7 @@ configuration only so far and need application-level enforcement and reporting.
 All operational rules live in the `config` table (`key`, `scope`, `scope_id`, `value`). Precedence is
 agent/seller scope, then area, then global. A `null` value means waived. See the seed block at the bottom of
 `db/schema.sql` for every key and its default (pool radii and steps, lease durations, affinity window, delivery
-fee floor/cap/bump, commissions, CoD levers, coverage gating).
+delivery pricing `route.*`, commissions, CoD levers, coverage gating). Rate values are placeholders for Nyange to set.
 
 ## 9. System shape
 
@@ -154,26 +183,35 @@ Clients (buyer / seller / agent / admin) -> API + auth (phone OTP, roles)
 
 Decided:
 1. Per-line claiming, preferring the same seller and same agent where possible.
-2. Seller sets delivery fee, buyer pays it on top; market forces resolve under-priced fees.
-3. Wallet built in-house.
+2. Buyer pays delivery on top of item price. Nyange (not sellers) sets the per-km rate; the fee comes from the optimised route (section 4a).
+3. Wallet built in-house; Nyange holds the digital wallet licence.
 4. Stack deferred.
 5. Nationwide with radius-capped pools.
 6. Range pricing with a buyer-approved max (section 4).
 7. CoD risk levers all configurable and waivable, shipped waived.
+8. Batching: single optimised route, distance-weighted factors, cost per km (plus optional duration term), agent approach unpriced.
 
 Open:
 - Application stack and client technology.
-- Legal position on stored-value wallets (section 6).
+- Confirm the wallet licence scope (section 6).
+- Placeholder rates: `route.rate_per_km_ugx` (1,500) and `route.rate_per_min_ugx` (0) need real values.
+- Who funds a reward top-up when a delivery task goes unclaimed (Nyange, seller, or buyer)? Sellers can no longer raise it.
+- Routing provider limits for Uganda (two-wheeler mode, coverage, pricing, storage terms) and the Route Optimization path for multi-buyer rounds.
 - Enforcement of settlement deadline and agent deposit.
 - Service flows (quotes, boda dispatch, print job files).
-- Rule for the second delivery fee when batching puts two sellers on one agent.
 - Concurrency test for the claim functions.
+- Vehicle class and load limits per task (what a boda can carry decides whether batching is possible).
 
 ## 11. Test coverage
 
-The data layer was exercised against PostgreSQL 16 with PostGIS in a scratch database (18 scenario checks):
-out-of-radius claim rejected, single winner on a contested line, affinity window blocks and then favours the
-claiming seller, claimed price locks, expired lease returns to pool, balanced journal accepted, duplicate idempotency
-key rejected, unbalanced journal rejected at commit, ledger update rejected, float gate waived/enforced/overridden
-per agent, agent outside radius rejected, and radius widening for tasks and lines including waiver. These checks were
-run by hand and are not yet committed as an automated test suite.
+Delivery pricing: `db/tests/route_fees.sql` is a committed, self-checking test (assertions, one rolled-back
+transaction, run it against a throwaway database with the schema loaded). It covers distance-weighted and equal
+factors, factors summing to 1, the duration and dwell terms, the standalone cap, the minimum fee, the batch refusal
+rule and its waiver, the all-zero fallback, invalid input, and area-scoped rates. It also caught a rounding bug
+(a repeating-decimal factor pushing an exact share up one step), now fixed.
+
+Claim engine and ledger: 18 scenario checks were run by hand against PostgreSQL 16 + PostGIS when the schema was first
+written (out-of-radius claim rejected, single winner, affinity window, price lock, lease release, journal balance,
+duplicate idempotency key, ledger immutability, cash-float gate, radius widening). Those scripts were not saved, and
+the claim and ledger code was not re-run after the pricing changes; only the schema load and the pricing tests were.
+They should be recreated as a committed suite, together with a true concurrency test.
