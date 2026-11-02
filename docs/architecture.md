@@ -86,7 +86,7 @@ implementation must satisfy the invariants in section 7.
 3. On success the seller's actual offer price is **locked** for that line, and the seller must confirm within the confirmation window or the line returns to the pool.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
-6. *(Proposed.)* Once confirmed, a seller stays committed to the line until the buyer decides. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
+6. Once confirmed, a seller is expected to stay with the line, but may withdraw before payment under the rules in section 4.6. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
 
 ### 4.3 Final fee, buyer decision, payment and preparation
 
@@ -138,6 +138,20 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 - **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed the task. Any cancellation fee stays with the sellers concerned.
 - **CoD orders:** nothing has been paid, so there is nothing to refund; the same stages apply.
 
+#### A seller withdraws a claim before payment *(decided)*
+
+| When the seller withdraws | What happens |
+|---|---|
+| Claimed, not yet confirmed | The seller lets go; the line returns to the pool. No consequence. |
+| Confirmed, fee not yet final (still waiting for other lines) | Allowed freely, because the buyer is not yet involved. The line returns to the pool at once. |
+| Fee final, buyer deciding (inside the 15 minutes) | The fee the buyer was shown is void. The buyer is told, and the order goes back to waiting for all lines. When it is whole again, a new final fee is fixed and the buyer gets a **fresh notification and a fresh 15 minutes**. |
+| Buyer approved, not yet paid | Handled as a drop-out after approval (below): up to 30 minutes for a replacement, and re-approval if the total rises. **Payment is paused** while any line is unclaimed, and the buyer gets **a fresh 60 minutes to pay** once the order is whole again. |
+| After payment | Handled by the drop-out rules below. |
+
+- A seller who withdraws a line cannot claim that same line of that order again.
+- The drop-out penalty rule (waived at launch) also covers withdrawals after confirming.
+- A line that nobody claims within **30 minutes** of entering the pool (whether new or returned) expires; see below.
+
 #### A seller drops out after the buyer has approved
 
 - *(Decided.)* The line goes back to the pool for up to **30 minutes** and the buyer is told. The dropped seller's credit for that line is taken back and held by Nyange until a replacement seller claims the line or the buyer is refunded.
@@ -153,7 +167,7 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 
 #### Expiry, partial fulfilment and disputes
 
-- A line nobody claims within its allowed time expires. The buyer is told and chooses what to do with the rest of the order. *(Draft.)*
+- A line nobody claims within **30 minutes** of entering the pool (or re-entering it) expires. *(Decided.)* The buyer is told and chooses within 15 minutes between cancelling the whole order and carrying on without that line; no choice cancels the order. *(Proposed: same pattern as a dropped line with no replacement.)*
 - Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
 - If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution. *(Draft.)*
 
@@ -301,6 +315,10 @@ Rules that must always hold, whatever technology implements them.
 35. After payment the buyer can cancel only the whole order, and only before pickup. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
 36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nobody can withdraw it first.
 37. A line dropped by a seller returns to the pool. The dropped seller keeps nothing for it, and the money for that line stays with Nyange until a replacement claims it or the buyer is refunded.
+38. No payment is accepted for an order while any of its lines is unclaimed. When the order is whole again the buyer gets a fresh 60 minutes to pay.
+39. A seller who withdraws a line cannot claim that same line of that order again.
+40. If a seller withdraws while the buyer is deciding on the final fee, that fee is void: the buyer is told, and gets a fresh notification and a fresh 15 minutes once a new final fee is fixed.
+41. An unclaimed line expires 30 minutes after it enters (or re-enters) the pool.
 
 ## 8. Tunable rules and parameters
 
@@ -313,7 +331,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Confirmation window (seller and agent) | 10 minutes |
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
-| Prepaid payment window after approval | 60 minutes (no confirmed payment cancels) |
+| Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal) |
+| Time an unclaimed line waits before it expires | 30 minutes |
 | Hold period on reversible transactions (the reversal window) | 4 hours, running from delivery for order payments (per transaction type, waivable) |
 | Payment cut-off before the deadline (new attempts stop) | to be decided |
 | Grace for a payment in progress at the deadline | to be decided |
@@ -367,12 +386,13 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 23. Penalties for sellers and agents who drop out are waived at launch, and tunable.
 24. Anything that would raise what the buyer pays after they approved needs their re-approval within 15 minutes, otherwise the order is cancelled with a full refund.
 25. If no replacement seller claims a dropped line within 30 minutes, the buyer chooses within 15 minutes between cancelling the whole order (full refund) and carrying on without that line (refund for it); no choice cancels the order.
+26. A seller may withdraw a claim before payment: free until the fee is final; a withdrawal during the buyer's decision voids the fee and restarts their 15 minutes; after approval it is handled as a drop-out, with payment paused and a fresh 60 minutes once the order is whole again. A seller cannot re-claim a line they withdrew.
+27. An unclaimed line expires after 30 minutes in the pool.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
-- Sellers withdrawing a claim before the buyer has decided or paid, and agents dropping a task after pickup (goods and cash in their hands).
+- Agents dropping a task after pickup (goods and cash in their hands).
 - The base of the cancellation fee (proposed: the item price of the lines already ready), compensating an agent already travelling when the buyer cancels, and how a fee is collected from a CoD buyer who has paid nothing.
-- Expiry: how long an unclaimed order line waits before it expires.
 - Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
 - The payment cut-off before the deadline and the grace for a payment in progress at the deadline: how long each should be.
 - Refunds of late payments: how quickly they are returned, and who bears any provider charges.
