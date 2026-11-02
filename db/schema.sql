@@ -135,20 +135,22 @@ create table seller_locations (
     seller_id       uuid not null references sellers(id),
     name            text not null,
     geom            geography(Point, 4326) not null,
-    max_radius_m    integer not null check (max_radius_m > 0)
+    max_radius_m    integer not null check (max_radius_m > 0),
+    unique (id, seller_id)                              -- target for composite FKs: a location belongs to one seller
 );
 create index seller_locations_geom_idx on seller_locations using gist (geom);
 
 create table offers (
     id           uuid primary key default gen_random_uuid(),
     seller_id    uuid not null references sellers(id),
-    location_id  uuid not null references seller_locations(id),
+    location_id  uuid not null,
     variant_id   uuid not null references variants(id),
     price_ugx    bigint not null check (price_ugx > 0),
     in_stock     boolean not null default true,
     active       boolean not null default true,
     updated_at   timestamptz not null default now(),
-    unique (location_id, variant_id)
+    unique (location_id, variant_id),
+    foreign key (location_id, seller_id) references seller_locations (id, seller_id)
 );
 create index offers_variant_idx on offers (variant_id) where active and in_stock;
 
@@ -182,6 +184,7 @@ create table orders (
     drop_landmark     text,
     payment_method    payment_method not null,
     status            order_status not null default 'placed',
+    area_id           uuid references areas(id),        -- set from drop_geom on insert; scopes area config
     created_at        timestamptz not null default now()
 );
 
@@ -214,9 +217,10 @@ create table shipments (
     id              uuid primary key default gen_random_uuid(),
     order_id        uuid not null references orders(id),
     seller_id       uuid not null references sellers(id),
-    location_id     uuid not null references seller_locations(id),
+    location_id     uuid not null,
     status          shipment_status not null default 'pending',
-    delivery_fee_ugx bigint not null check (delivery_fee_ugx >= 0)
+    delivery_fee_ugx bigint not null check (delivery_fee_ugx >= 0),
+    foreign key (location_id, seller_id) references seller_locations (id, seller_id)
 );
 alter table order_lines
     add constraint order_lines_shipment_fk foreign key (shipment_id) references shipments(id);
@@ -230,7 +234,8 @@ create table tasks (
     status              task_status not null default 'open',
     anchor_geom         geography(Point, 4326) not null,   -- pool centre (first pickup, market, etc.)
     pool_radius_m       integer not null,
-    reward_ugx          bigint not null check (reward_ugx >= 0),  -- what the agent is paid; seller may raise it
+    reward_ugx          bigint not null check (reward_ugx >= 0),  -- what the agent is paid (for deliveries, the computed fee)
+    area_id             uuid references areas(id),                -- set from anchor_geom on insert; scopes area config
     cash_exposure_ugx   bigint not null default 0 check (cash_exposure_ugx >= 0),
     payload             jsonb not null default '{}'::jsonb,
     -- affinity: prefer the agent already handling a sibling shipment of the same order
@@ -243,6 +248,26 @@ create table tasks (
     version             integer not null default 0
 );
 create index tasks_open_geom_idx on tasks using gist (anchor_geom) where status = 'open';
+
+-- Area resolution: the smallest area covering a point. Triggers fill orders.area_id / tasks.area_id
+-- so claims and pool widening honour area-scoped configuration.
+create function area_for(p_geom geography) returns uuid language sql stable as $$
+    select id from areas where st_covers(geom, p_geom) order by st_area(geom) limit 1
+$$;
+create function orders_set_area() returns trigger language plpgsql as $$
+begin
+    if new.area_id is null then new.area_id := area_for(new.drop_geom); end if;
+    return new;
+end $$;
+create trigger orders_set_area before insert on orders
+    for each row execute function orders_set_area();
+create function tasks_set_area() returns trigger language plpgsql as $$
+begin
+    if new.area_id is null then new.area_id := area_for(new.anchor_geom); end if;
+    return new;
+end $$;
+create trigger tasks_set_area before insert on tasks
+    for each row execute function tasks_set_area();
 
 create table task_stops (
     id            uuid primary key default gen_random_uuid(),
@@ -351,6 +376,12 @@ create trigger ledger_entries_no_change before update or delete on ledger_entrie
     for each row execute function ledger_immutable();
 create trigger journals_no_change before update or delete on journals
     for each row execute function ledger_immutable();
+-- TRUNCATE bypasses row triggers, so it needs its own statement-level guard. Application roles
+-- should also never own these tables or hold TRUNCATE / trigger-management privileges.
+create trigger ledger_entries_no_truncate before truncate on ledger_entries
+    for each statement execute function ledger_immutable();
+create trigger journals_no_truncate before truncate on journals
+    for each statement execute function ledger_immutable();
 
 create view account_balances as
     select a.id as account_id, a.kind, a.owner_id, coalesce(sum(e.amount), 0) as balance
@@ -385,20 +416,34 @@ create table audit_log (
 -- ---------------------------------------------------------------------------
 
 -- Seller claims an order line at their standing offer's price.
+-- The parent order row is locked first (order, then lines, always in that sequence), so two sellers
+-- claiming sibling lines of one order are serialised instead of deadlocking on each other's affinity
+-- update. Order cancellation must lock the order row the same way, so a cancel and a claim cannot interleave.
 create function claim_order_line(p_line uuid, p_seller uuid, p_offer uuid)
 returns boolean language plpgsql as $$
 declare
-    v_lease integer := coalesce((config_get('claim.order_line.lease_s'))::integer, 600);
-    v_rows  integer;
+    v_order  uuid;
+    v_area   uuid;
+    v_lease  integer;
+    v_window integer;
+    v_rows   integer;
 begin
+    select ol.order_id into v_order from order_lines ol where ol.id = p_line;
+    if v_order is null then return false; end if;
+    select o.area_id into v_area from orders o where o.id = v_order for update;
+
+    v_lease  := coalesce((config_get('claim.order_line.lease_s', v_area))::integer, 600);
+    v_window := coalesce((config_get('claim.affinity.exclusive_window_s', v_area))::integer, 90);
+
     with eligible as (
         select ol.id, o.id as offer_id, o.price_ugx
         from order_lines ol
-        join orders od          on od.id = ol.order_id
+        join orders od          on od.id = ol.order_id and od.status in ('placed', 'in_progress')
         join offers o           on o.id = p_offer and o.seller_id = p_seller
                                and o.variant_id = ol.variant_id and o.active and o.in_stock
-        join seller_locations sl on sl.id = o.location_id
+        join seller_locations sl on sl.id = o.location_id and sl.seller_id = p_seller
         join sellers s          on s.id = o.seller_id and s.status = 'active'
+        join users us           on us.id = s.user_id and us.status = 'active'
         where ol.id = p_line
           and ol.status = 'open'
           and o.price_ugx <= ol.max_unit_price_ugx
@@ -421,33 +466,47 @@ begin
         -- seller affinity: first refusal on sibling lines for the exclusive window
         update order_lines sib
            set exclusive_seller_id = p_seller,
-               exclusive_until = now() + make_interval(
-                   secs => coalesce((config_get('claim.affinity.exclusive_window_s'))::integer, 90))
-         where sib.order_id = (select order_id from order_lines where id = p_line)
+               exclusive_until = now() + make_interval(secs => v_window)
+         where sib.order_id = v_order
            and sib.status = 'open' and sib.id <> p_line;
     end if;
     return v_rows = 1;
 end $$;
 
--- Agent claims a task. Eligibility: active, capable, within radius of the pool
--- centre, respects preferred-agent window, and (if configured) the cash float limit.
+-- Agent claims a task. Eligibility: active agent and user, capable, within radius of the pool
+-- centre, respects the preferred-agent window, and (if configured) the cash float limit.
+-- Float check: cash already held (ledger) + cash exposure of tasks this agent has claimed but not yet
+-- completed + this task's exposure must stay within the limit. The agent row is locked so concurrent
+-- claims by one agent cannot both pass the check. When a CoD task completes, the application must post
+-- the cash-collection journal in the same transaction, so the cash moves from "reserved" to "held".
 create function claim_task(p_task uuid, p_agent uuid)
 returns boolean language plpgsql as $$
 declare
-    v_lease  integer := coalesce((config_get('claim.task.lease_s'))::integer, 600);
-    v_float  bigint  := (config_get('cod.agent.float_limit_ugx', null, p_agent))::bigint;  -- null = waived
-    v_verify boolean := coalesce((config_get('cod.agent.verification_required', null, p_agent))::boolean, false);
-    v_held   bigint;
-    v_rows   integer;
+    v_area     uuid;
+    v_lease    integer;
+    v_float    bigint;
+    v_verify   boolean;
+    v_held     bigint;
+    v_reserved bigint;
+    v_rows     integer;
 begin
-    select coalesce(b.balance, 0) into v_held
+    select t.area_id into v_area from tasks t where t.id = p_task;
+    perform 1 from agents a where a.id = p_agent for update;
+
+    v_lease  := coalesce((config_get('claim.task.lease_s', v_area))::integer, 600);
+    v_float  := (config_get('cod.agent.float_limit_ugx', v_area, p_agent))::bigint;          -- null = waived
+    v_verify := coalesce((config_get('cod.agent.verification_required', v_area, p_agent))::boolean, false);
+
+    select coalesce(sum(b.balance), 0) into v_held
     from account_balances b where b.kind = 'agent_cash_in_hand' and b.owner_id = p_agent;
-    v_held := coalesce(v_held, 0);
+    select coalesce(sum(t.cash_exposure_ugx), 0) into v_reserved
+    from tasks t where t.agent_id = p_agent and t.status in ('claimed', 'in_progress');
 
     with eligible as (
         select t.id
         from tasks t
         join agents a on a.id = p_agent and a.status = 'active'
+        join users u on u.id = a.user_id and u.status = 'active'
         join agent_capabilities c on c.agent_id = a.id and c.capability = t.type
         where t.id = p_task
           and t.status = 'open'
@@ -455,7 +514,7 @@ begin
           and st_dwithin(a.last_geom, t.anchor_geom, t.pool_radius_m)
           and (t.preferred_agent_id is null or t.preferred_until <= now() or t.preferred_agent_id = p_agent)
           and (t.cash_exposure_ugx = 0
-               or ((v_float is null or v_held + t.cash_exposure_ugx <= v_float)
+               or ((v_float is null or v_held + v_reserved + t.cash_exposure_ugx <= v_float)
                    and (not v_verify or a.verified_at is not null)))
         for update of t skip locked
     )
@@ -483,16 +542,15 @@ $$;
 
 -- Unclaimed pool items widen their radius to the largest step whose delay has elapsed,
 -- e.g. config pool.order_line.radius_steps = [{"after_s":120,"radius_m":7000},{"after_s":300,"radius_m":15000}].
--- Age is measured from order creation (lines) or task creation (tasks). A waived (null) key never widens.
+-- Steps are looked up per row, so an area-scoped schedule applies to items in that area. Age is measured
+-- from order creation (lines) or task creation (tasks). A waived (null) schedule never widens.
 create function expand_pool_radius(p_steps_key text, p_table text) returns void language plpgsql as $$
-declare
-    v_steps jsonb := config_get(p_steps_key);
 begin
-    if v_steps is null then return; end if;
     if p_table = 'order_lines' then
         update order_lines ol set pool_radius_m = x.target
         from (select l.id,
-                     (select max((e->>'radius_m')::int) from jsonb_array_elements(v_steps) e
+                     (select max((e->>'radius_m')::int)
+                      from jsonb_array_elements(coalesce(config_get(p_steps_key, o.area_id), '[]'::jsonb)) e
                       where (e->>'after_s')::int <= extract(epoch from now() - o.created_at)) as target
               from order_lines l join orders o on o.id = l.order_id
               where l.status = 'open') x
@@ -500,7 +558,8 @@ begin
     elsif p_table = 'tasks' then
         update tasks t set pool_radius_m = x.target
         from (select t2.id,
-                     (select max((e->>'radius_m')::int) from jsonb_array_elements(v_steps) e
+                     (select max((e->>'radius_m')::int)
+                      from jsonb_array_elements(coalesce(config_get(p_steps_key, t2.area_id), '[]'::jsonb)) e
                       where (e->>'after_s')::int <= extract(epoch from now() - t2.created_at)) as target
               from tasks t2 where t2.status = 'open') x
         where t.id = x.id and x.target > t.pool_radius_m;
@@ -544,7 +603,7 @@ declare
     v_step    numeric := greatest(coalesce((config_get('route.round_to_ugx', p_area))::numeric, 1), 1);
     v_cap     boolean := coalesce((config_get('route.cap_at_standalone', p_area))::boolean, true);
     v_stops   integer := coalesce(p_stop_count, n + 1);
-    v_route_cost numeric;
+    v_route_k numeric;      -- route cost x 60000: exact (numeric multiply/add never rounds), divided only once at the end
 begin
     if n = 0 then raise exception 'no shipments'; end if;
     if array_length(p_standalone_m, 1) is distinct from n or array_length(p_standalone_s, 1) is distinct from n then
@@ -554,16 +613,18 @@ begin
         raise exception 'unknown route.factor_mode %', v_mode;
     end if;
 
-    v_route_cost := p_route_distance_m / 1000.0 * v_km
-                  + (p_route_duration_s + v_dwell * v_stops) / 60.0 * v_min;
+    -- cost = km * rate_km + minutes * rate_min; scaled by 60000 so that no division happens until the final
+    -- ceiling, which keeps exact-multiple costs exact (no repeating-decimal noise, no pre-rounding).
+    v_route_k := p_route_distance_m * v_km * 60
+               + (p_route_duration_s + v_dwell * v_stops) * v_min * 1000;
 
     return query
     with base as (
         select ids.id, ids.ord,
                p_standalone_m[ids.ord] as d_m,
                -- standalone trip = pickup + drop, so two stops of dwell
-               (p_standalone_m[ids.ord] / 1000.0 * v_km
-                + (p_standalone_s[ids.ord] + v_dwell * 2) / 60.0 * v_min) as solo_cost
+               (p_standalone_m[ids.ord] * v_km * 60
+                + (p_standalone_s[ids.ord] + v_dwell * 2) * v_min * 1000) as solo_k
         from unnest(p_shipment_ids) with ordinality as ids(id, ord)
     ), shares as (
         -- factor kept as numerator/denominator so fees multiply before dividing: a share that
@@ -571,13 +632,13 @@ begin
         select b.*,
                case
                  when v_mode = 'equal' then 1::numeric
-                 when v_mode = 'cost' and sum(b.solo_cost) over () > 0 then b.solo_cost
+                 when v_mode = 'cost' and sum(b.solo_k) over () > 0 then b.solo_k
                  when v_mode = 'distance' and sum(b.d_m) over () > 0 then b.d_m::numeric
                  else 1::numeric         -- degenerate input (all zero): fall back to equal shares
                end as f_num,
                case
                  when v_mode = 'equal' then n::numeric
-                 when v_mode = 'cost' and sum(b.solo_cost) over () > 0 then sum(b.solo_cost) over ()
+                 when v_mode = 'cost' and sum(b.solo_k) over () > 0 then sum(b.solo_k) over ()
                  when v_mode = 'distance' and sum(b.d_m) over () > 0 then sum(b.d_m) over ()::numeric
                  else n::numeric
                end as f_den
@@ -585,8 +646,8 @@ begin
     ), priced as (
         select sh.*,
                sh.f_num / sh.f_den as f,
-               greatest(v_floor, ceil(round(sh.solo_cost, 4) / v_step) * v_step) as solo_fee,
-               greatest(v_floor, ceil(round(v_route_cost * sh.f_num / sh.f_den, 4) / v_step) * v_step) as share_fee
+               greatest(v_floor, ceil(sh.solo_k / (60000 * v_step)) * v_step) as solo_fee,
+               greatest(v_floor, ceil(v_route_k * sh.f_num / (sh.f_den * 60000 * v_step)) * v_step) as share_fee
         from shares sh
     )
     select pr.id,

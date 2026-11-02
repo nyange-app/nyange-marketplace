@@ -45,6 +45,9 @@ Field agent <------------------ claim ------------------ [TASK POOL: delivery | 
   sellers and agents. Otherwise they see "not yet available" and can join a waitlist. Controlled by
   `coverage.*` config, off by default.
 - **Leases:** a claim must be confirmed within a lease, otherwise `release_expired_claims` returns the item to the pool.
+- **Areas:** each order and task is stamped with the smallest area covering its drop point or anchor (`area_for`, set by
+  a trigger on insert). Claim leases, affinity windows, cash controls and radius schedules are all looked up with that
+  area, so an area-scoped setting overrides the global one for items in that area. Items outside every area use global values.
 
 ## 4. Orders, per-line claims and affinity
 
@@ -100,14 +103,19 @@ current pricing and a spend alert, and Google's terms on storing results. Road d
 A claim is a single conditional `UPDATE ... WHERE status = 'open'` that also checks eligibility and takes a row
 lock with `FOR UPDATE ... SKIP LOCKED`. Exactly one claimant wins; everyone else gets `false`.
 
-- `claim_order_line(line, seller, offer)` - checks offer ownership, stock, price vs ceiling, radius, exclusive window.
-- `claim_task(task, agent)` - checks status, capability, radius, preferred-agent window, and the cash-float and
-  verification levers.
+- `claim_order_line(line, seller, offer)` - first locks the parent order row, so claims on sibling lines of one order
+  are serialised (and cannot deadlock on each other's affinity update). Then checks: order still open for fulfilment
+  (not cancelled), offer owned by the claiming seller and located at one of that seller's own locations, stock, price vs
+  buyer ceiling, radius, exclusive window, and that both the seller and its user are active. Order cancellation must
+  lock the order row the same way.
+- `claim_task(task, agent)` - locks the agent row (so one agent's concurrent claims are serialised), then checks status,
+  capability, radius, preferred-agent window, that the agent and its user are active, and the cash-float and
+  verification levers (section 7).
 - `release_expired_claims()` and `expand_pool_radius(...)` - scheduler hooks.
 
-Verified (see "Test coverage"): single-winner claims, radius limits, affinity window, price lock, lease release,
-radius widening and waiver. Not yet verified: behaviour under truly concurrent sessions. The design relies on the
-status guard and `SKIP LOCKED`, but a concurrency test should be added before this is trusted in production.
+Verified by hand in a scratch database (see section 11): single-winner claims, radius limits, affinity window, price
+lock, lease release, radius widening and waiver, and a forced two-session race on sibling lines. Not yet verified:
+concurrent claims by the same agent, and everything under a real application's load.
 
 ## 6. Money
 
@@ -154,14 +162,18 @@ it to JSON `null`. All agent controls ship waived, to make early agent onboardin
 | `cod.agent.deposit_required_ugx` | Security deposit before an agent can take CoD tasks |
 | `cod.agent.verification_required` | Require a verified agent for CoD tasks; enforced in `claim_task` |
 
-`float_limit_ugx` and `verification_required` are enforced in the claim function. Settlement deadline and deposit are
-configuration only so far and need application-level enforcement and reporting.
+`float_limit_ugx` and `verification_required` are enforced in the claim function. The float check counts cash already
+held (ledger) **plus** the cash exposure of tasks the agent has claimed but not yet completed **plus** the task being
+claimed, so an agent cannot stack several claims that individually fit. A claim that expires returns its exposure to
+the pool. When a CoD task completes, the application must post the cash-collection journal in the same transaction, so
+the amount moves from "reserved" to "held" without being counted twice or not at all. Settlement deadline and deposit
+are configuration only so far and need application-level enforcement and reporting.
 
 ## 8. Configuration
 
 All operational rules live in the `config` table (`key`, `scope`, `scope_id`, `value`). Precedence is
 agent/seller scope, then area, then global. A `null` value means waived. See the seed block at the bottom of
-`db/schema.sql` for every key and its default (pool radii and steps, lease durations, affinity window, delivery
+`db/schema.sql` for every key and its default (pool radii and steps, lease durations, affinity window,
 delivery pricing `route.*`, commissions, CoD levers, coverage gating). Rate values are placeholders for Nyange to set.
 
 ## 9. System shape
@@ -202,15 +214,19 @@ Open:
 
 ## 11. Verification status
 
-There is no committed test suite yet; the design is still being settled.
+There is no committed test suite yet; the design is still being settled. What has been checked, by hand, in a
+throwaway PostgreSQL 16 + PostGIS database (the scripts were not kept):
 
-- The pricing function (`compute_route_fees`) was exercised by hand against a scratch PostgreSQL 16 database during
-  design: distance-weighted and equal factors, the duration and dwell terms, the standalone cap, the minimum fee and the
-  batch refusal rule. That run found and fixed a rounding bug (a repeating-decimal factor pushing an exact share up one
-  rounding step). The scripts were not kept.
-- The claim engine and ledger were checked by hand when the schema was first written (single-winner claims, radius,
-  affinity window, price lock, lease release, journal balance, idempotency, immutability, cash-float gate, radius
-  widening). They were not re-run after the pricing changes; only the schema load and the pricing function were.
-- Not yet verified at all: behaviour under truly concurrent claims.
+- The pricing function: distance-weighted and equal factors, the duration and dwell terms, the standalone cap, the
+  minimum fee, the batch refusal rule, and exact-boundary rounding.
+- The claim engine and ledger, when first written: single-winner claims, radius, affinity window, price lock, lease
+  release, journal balance, idempotency, immutability, cash-float gate, radius widening.
+- Automated review findings on the first PR revision, each reproduced on the old schema and re-checked after the fix:
+  a two-session deadlock between sellers claiming sibling lines, cumulative cash exposure exceeding the float limit,
+  area-scoped settings ignored by claims and pool widening, an offer pointing at another seller's location, claims on
+  cancelled orders, claims by suspended users, `TRUNCATE` bypassing the append-only ledger, and fee rounding that
+  could move a cost sitting just above a step boundary down onto it.
+- Not yet verified: concurrent claims by one agent (the agent-row lock is untested under concurrency), and behaviour
+  under real load.
 
-A committed automated suite, including a concurrency test, should be written once the design is agreed.
+A committed automated suite, including concurrency tests, should be written once the design is agreed.
