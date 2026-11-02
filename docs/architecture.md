@@ -202,16 +202,17 @@ Open:
 - Concurrency test for the claim functions.
 - Vehicle class and load limits per task (what a boda can carry decides whether batching is possible).
 
-## 11. Test coverage
+## 11. Verification status
 
-Delivery pricing: `db/tests/route_fees.sql` is a committed, self-checking test (assertions, one rolled-back
-transaction, run it against a throwaway database with the schema loaded). It covers distance-weighted and equal
-factors, factors summing to 1, the duration and dwell terms, the standalone cap, the minimum fee, the batch refusal
-rule and its waiver, the all-zero fallback, invalid input, and area-scoped rates. It also caught a rounding bug
-(a repeating-decimal factor pushing an exact share up one step), now fixed.
+There is no committed test suite yet; the design is still being settled.
 
-Claim engine and ledger: 18 scenario checks were run by hand against PostgreSQL 16 + PostGIS when the schema was first
-written (out-of-radius claim rejected, single winner, affinity window, price lock, lease release, journal balance,
-duplicate idempotency key, ledger immutability, cash-float gate, radius widening). Those scripts were not saved, and
-the claim and ledger code was not re-run after the pricing changes; only the schema load and the pricing tests were.
-They should be recreated as a committed suite, together with a true concurrency test.
+- The pricing function (`compute_route_fees`) was exercised by hand against a scratch PostgreSQL 16 database during
+  design: distance-weighted and equal factors, the duration and dwell terms, the standalone cap, the minimum fee and the
+  batch refusal rule. That run found and fixed a rounding bug (a repeating-decimal factor pushing an exact share up one
+  rounding step). The scripts were not kept.
+- The claim engine and ledger were checked by hand when the schema was first written (single-winner claims, radius,
+  affinity window, price lock, lease release, journal balance, idempotency, immutability, cash-float gate, radius
+  widening). They were not re-run after the pricing changes; only the schema load and the pricing function were.
+- Not yet verified at all: behaviour under truly concurrent claims.
+
+A committed automated suite, including a concurrency test, should be written once the design is agreed.
