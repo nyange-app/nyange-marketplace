@@ -27,7 +27,7 @@ implementation must satisfy the invariants in section 7.
 | **Field agent** | Claims tasks from a pool. Each agent has capabilities (delivery, market price capture, cash deposit, cash withdrawal, payment collection, more to be added). Belongs to Nyange's pool. |
 | **Admin** | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, sets rules and parameters. |
 
-**Every user is a buyer (customer) by default.** Becoming a seller, field agent or admin adds a role to the same account; one person can hold several roles. Every user has a **Nyange wallet** (section 6). *(Proposed: one wallet per user, shared across their roles.)*
+**Every user is a buyer (customer) by default.** Becoming a seller, field agent or admin adds a role to the same account; one person can hold several roles. Every user has a **Nyange wallet** (section 6). A person has **one wallet**, shared across all their roles.
 
 ## 3. Core concepts
 
@@ -155,7 +155,8 @@ becomes the agent's reward for the delivery.
 - Every user has a Nyange wallet (every user is a buyer by default; seller and agent are added roles). Nyange also has its own account for its commission and cuts.
 - **All digital money lands in a wallet first.** It leaves only by withdrawal from the wallet through the mobile money rail.
 - **When a buyer pays an order by mobile money, each seller's share lands directly in that seller's wallet.** The buyer does not load their own wallet first. The delivery fee lands with Nyange and passes to the delivery agent's wallet when they claim the task.
-- **Everyone can top up their wallet from mobile money**, whatever their role (buyer, seller or agent).
+- **Everyone can top up their wallet from mobile money**, whatever their role (buyer, seller or agent). **Top-ups carry no hold**: topped-up money is available immediately, including for paying orders.
+- **One wallet per user**, whatever roles they hold.
 - **Actors never pay each other directly through mobile money.** Every payment between actors moves through wallets. Mobile money is used only to bring a payment in (landing in a wallet) or take money out (withdrawal).
 - Mobile money providers are only the rail. Nyange reconciles against their statements.
 
@@ -187,7 +188,7 @@ while the transaction that produced it can still be reversed.
 - **Default hold period: 4 hours.** It is the reversal window. It can be set per transaction type and can be waived.
 - **Lifecycle:** a hold is *active*, then ends in one of three ways: *released* when its period ends (the money becomes available), *extended* (for example while a dispute is open, until it is resolved), or *consumed* (the held money is used to cover a reversal such as a refund).
 - A wallet can have many holds at once. Each is independent and its history is kept.
-- **Where holds apply** *(proposed)*: all money an order's payment credits to a seller or agent (the delivery fee from the moment the agent claims the task). The hold starts when the money lands and has no fixed end until the delivery is complete; the 4-hour period then runs from the moment of delivery. If the order is cancelled before delivery, the holds are consumed to return the money to the buyer.
+- **Top-ups do not carry holds.** **Where holds apply** *(proposed)*: all money an order's payment credits to a seller or agent (the delivery fee from the moment the agent claims the task). The hold starts when the money lands and has no fixed end until the delivery is complete; the 4-hour period then runs from the moment of delivery. If the order is cancelled before delivery, the holds are consumed to return the money to the buyer.
 
 ### 6.4 Ledger rules
 
@@ -253,7 +254,7 @@ Rules that must always hold, whatever technology implements them.
 24. A cancelled order is never revived. Money already paid for it is returned to the buyer's wallet, and a payment confirmed after the order was cancelled is refunded in full without ever reaching sellers or the agent.
 
 **Wallets and holds**
-25. Every user has a wallet. Every user is a buyer by default.
+25. Every user has exactly one wallet, shared across all their roles. Every user is a buyer by default.
 26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task. Money leaves only by withdrawal from a wallet through mobile money.
 27. Actors never pay each other directly through mobile money. Money between actors moves only through wallets.
 28. A hold is a recorded object (wallet, amount, reason, the transaction it protects, start, end, status, how it ended), never a flag.
@@ -261,7 +262,8 @@ Rules that must always hold, whatever technology implements them.
 30. A hold ends automatically at its end time unless it is extended or consumed, and every change to a hold is recorded.
 31. *(Proposed.)* Withdrawals go only to the actor's own verified mobile money number.
 32. Money credited to a seller or agent for an order is on hold from the moment it lands until the order is delivered and the reversal window has passed. Until then it can be taken back for a cancellation and cannot be withdrawn.
-33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer. Anyone may top up their wallet from mobile money.
+33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
+34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
 
 ## 8. Tunable rules and parameters
 
@@ -315,14 +317,15 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 15. When a buyer pays an order (mobile money or wallet), each seller's share lands directly in the seller's wallet, on hold until delivery plus the reversal window. The delivery fee lands with Nyange and passes to the delivery agent's wallet, on hold, when the agent claims the task.
 16. Everyone can top up their wallet from mobile money, whatever their role.
 17. Every user is a buyer by default; seller and agent are roles added to the account.
+18. Mobile money top-ups carry no hold.
+19. One wallet per user, shared across all their roles.
+20. A user cannot fulfil their own order (claim its lines or deliver it).
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
 - Cancellation: who may cancel what and when, especially lines already claimed by a seller or already out for delivery.
 - Expiry: how long an unclaimed order line waits before it expires.
 - Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
-- Whether a mobile money top-up carries a hold (providers can reverse payments) and whether topped-up money can be spent on orders meanwhile.
-- Whether a person with several roles has one wallet shared across roles (proposed) or one per role, and whether a user may fulfil their own order (claim their own order's lines or deliver it); proposed: no.
 - The payment cut-off before the deadline and the grace for a payment in progress at the deadline: how long each should be.
 - Refunds of late payments: how quickly they are returned, and who bears any provider charges.
 - What an open dispute does to holds (proposed: the hold is extended until resolved), and what happens when a refund is due after a hold has ended and the money has been withdrawn.
