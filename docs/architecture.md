@@ -136,9 +136,9 @@ Typical flows:
 Mobile money providers are the rails only (collection and payout). A reconciliation job against provider statements
 is required.
 
-**Licence:** Nyange already holds the digital wallet licence. To confirm: the licence scope should cover holding buyer
-funds in escrow and paying out to sellers and agents, not only buyer wallets. The ledger is provider-agnostic, and
-mobile money providers remain the collection and payout rails.
+**Licensing:** this design assumes Nyange holds all licences and registrations it needs to operate (digital wallet,
+payments, escrow and payouts, and any others). Legal and regulatory questions are out of scope here. The ledger is
+provider-agnostic, and mobile money providers remain the collection and payout rails.
 
 ## 7. Cash on delivery and agent risk
 
@@ -184,7 +184,7 @@ Clients (buyer / seller / agent / admin) -> API + auth (phone OTP, roles)
 Decided:
 1. Per-line claiming, preferring the same seller and same agent where possible.
 2. Buyer pays delivery on top of item price. Nyange (not sellers) sets the per-km rate; the fee comes from the optimised route (section 4a).
-3. Wallet built in-house; Nyange holds the digital wallet licence.
+3. Wallet built in-house. All required licences are assumed in place.
 4. Stack deferred.
 5. Nationwide with radius-capped pools.
 6. Range pricing with a buyer-approved max (section 4).
@@ -193,7 +193,6 @@ Decided:
 
 Open:
 - Application stack and client technology.
-- Confirm the wallet licence scope (section 6).
 - Placeholder rates: `route.rate_per_km_ugx` (1,500) and `route.rate_per_min_ugx` (0) need real values.
 - Routing provider limits for Uganda (two-wheeler mode, coverage, pricing, storage terms) and the Route Optimization path for multi-buyer rounds.
 - Enforcement of settlement deadline and agent deposit.
