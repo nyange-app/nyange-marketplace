@@ -195,7 +195,6 @@ Open:
 - Application stack and client technology.
 - Confirm the wallet licence scope (section 6).
 - Placeholder rates: `route.rate_per_km_ugx` (1,500) and `route.rate_per_min_ugx` (0) need real values.
-- Who funds a reward top-up when a delivery task goes unclaimed (Nyange, seller, or buyer)? Sellers can no longer raise it.
 - Routing provider limits for Uganda (two-wheeler mode, coverage, pricing, storage terms) and the Route Optimization path for multi-buyer rounds.
 - Enforcement of settlement deadline and agent deposit.
 - Service flows (quotes, boda dispatch, print job files).
