@@ -61,7 +61,7 @@ implementation must satisfy the invariants in section 7.
 
 1. Buyer chooses catalog items and quantities, pins a drop location, and picks a payment method.
 2. For each line, the buyer sees the **price range** across eligible standing offers in range (lowest to highest) and **approves up to the highest**. That approval is the line's price ceiling.
-3. The buyer also sees an **estimated delivery fee** (section 5). The final fee is set after sellers claim; the buyer's approval covers the difference between the estimate and the final fee.
+3. The buyer also sees an **indicative delivery estimate** (section 5). It is not a commitment: the real fee is only known once every line is claimed and ready for pickup (section 4.3), and the buyer decides then.
 4. Each line enters the order pool.
 
 ### 4.2 Seller claims a line
@@ -72,15 +72,16 @@ implementation must satisfy the invariants in section 7.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
 
-### 4.3 Fulfilment and shipping
+### 4.3 Fulfilment, final delivery fee and buyer decision
 
-1. The seller prepares the goods and marks the line ready.
-2. Ready lines from the same seller location form one **shipment**, which creates a delivery task.
-3. Lines from different sellers on the same order become separate shipments, but may be combined onto one route (section 5).
+1. Sellers prepare their goods and mark their lines ready for pickup.
+2. When **all of the order's lines are claimed and ready for pickup**, Nyange works out the best route and fixes the **final delivery fee** (section 5). Lines from the same seller location form one shipment; shipments from different sellers may share one route.
+3. The buyer is **notified of the final delivery fee** and the order total, and may **accept or cancel the whole order** if the fee is higher than they are willing to pay.
+4. Only once the buyer has accepted is the delivery task created and offered to agents.
 
 ### 4.4 Agent claims a task
 
-1. Eligible agents (active, capable of the task type, in range) see open tasks.
+1. Eligible agents (active, capable of the task type, in range) see open tasks. A delivery task for an order appears only after the buyer has accepted the final fee.
 2. **Agent affinity:** a delivery task can be offered first, for a short window, to an agent already handling another shipment of the same order. After the window it opens to all eligible agents.
 3. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
 4. An agent must confirm within the confirmation window or the task returns to the pool.
@@ -90,7 +91,7 @@ implementation must satisfy the invariants in section 7.
 
 1. The agent collects the goods, delivers them, and records the outcome.
 2. **Payment:**
-   - *Mobile money / wallet:* the buyer pays up front; the money is held by Nyange until delivery.
+   - *Mobile money / wallet:* the buyer's money is held by Nyange until delivery. When the buyer pays, given the final fee is only known later, is an open question (section 9).
    - *CoD:* the agent collects cash at the drop-off. The agent now owes that cash to Nyange until they deposit it.
 3. When a line is completed, Nyange releases the money: the seller receives the item price less commission, the agent receives the delivery fee less Nyange's cut, and Nyange keeps commissions and cuts.
 4. Sellers and agents can withdraw their balance to mobile money.
@@ -101,6 +102,7 @@ implementation must satisfy the invariants in section 7.
 
 - A buyer may cancel lines that no seller has claimed yet; cancelling an order cancels all of its unclaimed lines.
 - A line nobody claims within its allowed time expires. The buyer is told and chooses what to do with the rest of the order.
+- If the buyer cancels on seeing the final delivery fee, the whole order is cancelled and nothing is delivered. *(Decided that the buyer can cancel at this point.)* Proposed: any money already paid is returned in full. What happens to sellers who have already prepared goods is open (section 9).
 - Lines are fulfilled independently: an order can complete with some lines delivered and others cancelled or expired. *(Decided.)*
 - If goods are not delivered or disputed, an admin resolves the dispute and the money follows the resolution.
 
@@ -109,7 +111,7 @@ implementation must satisfy the invariants in section 7.
 **Nyange alone sets delivery rates. Sellers have no say.** The buyer pays the delivery fee on top of item prices; it
 becomes the agent's reward for the delivery.
 
-1. Once lines are claimed and grouped into shipments, a **single best route** is worked out over all stops. This gives the route's total distance and travel time, plus each shipment's own standalone distance and time (as if it travelled alone).
+1. Once **all of the order's lines are claimed and ready for pickup**, a **single best route** is worked out over all stops. This gives the route's total distance and travel time, plus each shipment's own standalone distance and time (as if it travelled alone).
 2. **Route cost** = route kilometres × rate per km, plus (route minutes + a dwell allowance per stop) × rate per minute. The time term makes slow, congested routes cost more than short, fast ones. It is off until Nyange chooses a rate.
 3. Each shipment gets a **share** of the route cost; shares add up to 100%. Default rule: **weighted by standalone distance** (a farther seller carries more). Alternatives: equal shares, or weighted by standalone cost.
 4. A shipment's fee is its share, **rounded up** to the rounding step (default UGX 500), at least the minimum fee, and **never more than that shipment would pay travelling alone**.
@@ -118,7 +120,9 @@ becomes the agent's reward for the delivery.
 
 **Worked example** (rate UGX 1,500/km, no time term): shipment A would be 8 km alone, B 9 km alone, and the combined route is 12 km. Route cost 18,000. Shares 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 if delivered separately.
 
-**Checkout estimate:** before any seller claims, the fee is estimated from straight-line distance multiplied by a road factor (default 1.4, to be calibrated against real routes).
+**Fee timing:** the delivery fee is **final only after all lines are claimed and ready for pickup**. The buyer is then notified and may cancel (section 4.3). Nothing is charged for delivery before the buyer has seen and accepted the final amount.
+
+**Indicative estimate:** at ordering, before any seller has claimed, the buyer sees only an estimate from straight-line distance multiplied by a road factor (default 1.4, to be calibrated against real routes). It is a guide, not a promise.
 
 **Audit:** for every delivery, Nyange keeps the route, the rates and shares used, and the resulting fees, so any fee can be explained in a dispute.
 
@@ -190,7 +194,7 @@ Rules that must always hold, whatever technology implements them.
 16. Only Nyange sets delivery rates; sellers cannot.
 17. Shares of a route add up to 100% of the route cost.
 18. A shipment never pays more than it would travelling alone (when that cap is on), never less than the minimum fee, and is always rounded **up** to the step, never down.
-19. The buyer is never charged a delivery fee outside what they approved at ordering.
+19. A delivery fee is fixed only after all of the order's lines are claimed and ready, and the buyer is never charged it without having been shown the final amount and given the chance to cancel. No delivery task is offered to agents before the buyer has accepted.
 
 ## 8. Tunable rules and parameters
 
@@ -229,13 +233,18 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 6. Range pricing at checkout with a buyer-approved ceiling; the claim locks the seller's real price.
 7. All CoD controls are tunable and waivable, and ship waived.
 8. Batching: one best route, shares weighted by distance, cost by distance (plus an optional time term), agent's approach to the first pickup not charged.
+9. The delivery fee is final only after all of the order's lines are claimed and ready for pickup. The buyer is then notified and may cancel the order if the fee is too high.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
 - Cancellation: who may cancel what and when, especially lines already claimed by a seller or already out for delivery.
 - Expiry: how long an unclaimed order line waits before it expires.
 - Disputes: what counts as a dispute, who can raise one, and how an admin's resolution moves the money.
-- How the buyer's approval covers the delivery fee: a separate ceiling, or part of the line ceilings.
+- Buyer response to the final fee: how long they have to accept or cancel, and what silence means (accept, cancel, or keep waiting).
+- Sellers who have already prepared goods when the buyer cancels: who bears the cost, and whether goods may be held back until the buyer accepts.
+- Payment timing for mobile money and wallet buyers: items at ordering with the delivery fee later, or everything once the final fee is accepted.
+- When some lines expire or are cancelled, whether the final fee is fixed over the remaining lines, and when an order stops waiting for stragglers.
+- Whether agent affinity is still needed now that one route is planned for the whole order, or only for shipments delivered separately.
 - What happens to a delivery task that is still unclaimed at the widest radius (cancel, escalate to operations, or keep waiting).
 - Whether the mapping source works well enough for Uganda: coverage outside Kampala, boda (two-wheeler) routing, cost, and rules on storing results. Multi-buyer rounds also need ordering rules such as "pickup before drop".
 - How the settlement deadline and the security deposit are enforced and reported.
