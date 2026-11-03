@@ -141,7 +141,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 #### Before payment
 
-- A buyer may cancel lines that no seller has claimed yet; cancelling an order cancels all of its unclaimed lines. *(Proposed.)*
+- Until the buyer approves the final delivery fee, they can cancel the **whole order at any time, free**. Any sellers who have claimed lines are released at no cost to them. *(Decided.)*
 - If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases nothing has been paid for the order, so nothing is refunded. A payment confirmed after the order was cancelled is **refunded in full** and the order is **never revived**. *(Decided.)*
 
 #### Buyer cancels after payment *(decided)*
@@ -455,6 +455,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 33. Much of operations is handled off the platform at launch (section 1a). A delivery that stalls after pickup is a dispute raised by operations; recovery is handled off the platform and the dispute rules apply.
 34. If some lines expire or are cancelled, the final fee is fixed over the lines that remain, and any increase needs the buyer's re-approval within 15 minutes (decision 25 and invariant 24).
 35. Withdrawals go only to the actor's own verified mobile money number.
+36. Until the buyer approves the final delivery fee, they can cancel the whole order at any time, free; any sellers who have claimed are released at no cost.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
