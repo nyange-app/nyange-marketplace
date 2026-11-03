@@ -94,7 +94,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 4. The buyer has **15 minutes** to **approve or cancel**.
 5. On approval: a prepaid buyer **pays within 60 minutes**, by mobile money or from their wallet. The sellers' shares land **directly in the sellers' wallets**, on hold; the delivery fee lands with Nyange and passes to the delivery agent's wallet, on hold, when an agent claims the task. A CoD buyer has nothing to pay yet.
 6. Sellers **ready the goods for pickup** (prepaid: only after payment is confirmed; CoD: straight after approval).
-7. A field agent collects and delivers. CoD cash is collected at the drop-off.
+7. A field agent collects and delivers. For CoD, the cash is collected at the drop-off and then **handed over to Nyange**; only then are the sellers and the agent credited.
 8. After delivery, the holds on the payment end once the reversal window has passed (default 4 hours), and sellers and the agent can withdraw.
 
 ### 4.1 Buyer places an order
@@ -127,7 +127,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 1. Eligible agents (active, capable of the task type, in range) see open tasks. A delivery task for an order appears only after the buyer has approved the final fee (and, for prepaid orders, paid).
 2. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
-   - *Delivery fee:* when an agent claims a delivery task, Nyange passes the delivery fee (less its cut) from the amount it holds to the agent's wallet, **on hold** until the delivery is done and the reversal window has passed. If the agent later drops the task, that credit is taken back and the fee passes to the next agent who claims it.
+   - *Delivery fee (prepaid orders):* when an agent claims a delivery task, Nyange passes the delivery fee (less its cut) from the amount it holds to the agent's wallet, **on hold** until the delivery is done and the reversal window has passed. If the agent later drops the task, that credit is taken back and the fee passes to the next agent who claims it. For CoD orders the agent's fee is credited after the handover instead (section 4.5).
 3. A task may have several ordered stops (for example two pickups then a drop-off).
 
 ### 4.5 Delivery and settlement
@@ -135,7 +135,13 @@ onto the platform later, if volume makes off-platform handling impractical.
 1. The agent collects the goods, delivers them, and records **proof of delivery** (a photo plus a code the buyer gives at the door) and the outcome.
 2. **Payment:**
    - *Mobile money / wallet:* the buyer's payment has already landed in the wallets of the sellers and the delivery agent, on hold (section 4.3).
-   - *CoD:* the agent collects cash at the drop-off. The agent now owes that cash to Nyange until they settle it. At delivery, Nyange credits the sellers' and the agent's wallets (on hold).
+   - *CoD:* the agent collects cash at the drop-off. The agent owes that cash to Nyange until they **hand it over**. **Nyange credits the sellers and the agent only once the full CoD amount has been handed over**; until then nobody is credited.
+
+   **Handover of CoD cash** is done in the app, in either of two ways:
+   - *From float:* if the agent keeps money in their own wallet in advance (their *float*), they hand the cash over immediately from it.
+   - *Through mobile money:* the agent deposits the cash onto their own mobile money, then pays Nyange's company wallet through the mobile money rail and records it in the app.
+
+   Once Nyange's company wallet has received the full CoD amount, the sellers' shares (price less commission) and the agent's fee (less Nyange's cut) are credited to their wallets, **on hold** like any other payment. Because delivery is already complete, the reversal window runs from the moment the money lands. *(Proposed: if a dispute is open when the handover completes, the disputed amounts are credited on hold and stay held until it is decided.)*
 3. After delivery, the holds on the money paid for the order end once the reversal window has passed (default 4 hours after delivery), and the money becomes available to each seller and the agent. Nyange keeps its commission and cut.
 4. Sellers and agents withdraw their available money from their wallet to their own mobile money number.
 
@@ -206,7 +212,7 @@ The delivery task is offered within a radius that widens (3 km, then 7 km after 
 - **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
 - **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
-- **When:** from pickup until the reversal window ends (4 hours after delivery by default; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
+- **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders *(proposed)*; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
 - **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
 - **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
@@ -239,7 +245,7 @@ becomes the agent's reward for the delivery.
 
 ### 6.1 Wallets *(decided)*
 
-- Every user has a Nyange wallet (every user is a buyer by default; seller and agent are added roles). Nyange also has its own account for its commission and cuts.
+- Every user has a Nyange wallet (every user is a buyer by default; seller and agent are added roles). Nyange also has its own company wallet, which receives its commission and cuts and the CoD cash handed over by agents.
 - **All digital money lands in a wallet first.** It leaves only by withdrawal from the wallet through the mobile money rail.
 - **When a buyer pays an order by mobile money, each seller's share lands directly in that seller's wallet.** The buyer does not load their own wallet first. The delivery fee lands with Nyange and passes to the delivery agent's wallet when they claim the task.
 - **Everyone can top up their wallet from mobile money**, whatever their role (buyer, seller or agent). **Top-ups carry no hold**: topped-up money is available immediately, including for paying orders.
@@ -256,7 +262,7 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Anyone tops up their wallet by mobile money | Provider → that user's wallet |
 | Buyer pays by mobile money | Provider → sellers' wallets (price less commission, **on hold**) + Nyange (delivery fee and commission) |
 | Buyer pays from their wallet | Buyer's wallet → the same split |
-| Agent claims the delivery task | Nyange → agent's wallet (fee less cut, **on hold**) |
+| Agent claims the delivery task (prepaid orders) | Nyange → agent's wallet (fee less cut, **on hold**) |
 | Agent drops the task before delivery | The agent's credit is taken back (hold consumed) and returns to Nyange; it passes to the next agent who claims |
 | Delivery completed | The holds end after the reversal window (default 4 hours after delivery); the money becomes available |
 | Dispute raised | The holds on the disputed amounts are extended until the admin decides |
@@ -264,8 +270,8 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which stays with the sellers of the ready lines |
 | Seller drops a line before delivery | The seller's credit for that line is taken back (hold consumed) and held by Nyange until a replacement seller claims it (credited on hold) or the buyer is refunded |
 | Payment confirmed after the order was cancelled | Returned in full to the buyer's wallet; it never reaches sellers or the agent |
-| Agent collects CoD cash | Agent's cash-in-hand ↑ (agent owes Nyange the cash); at delivery, sellers' and the agent's wallets are credited on hold, funded by Nyange |
-| Agent settles cash owed *(proposed)* | Agent's wallet → Nyange. The agent funds their wallet from earnings, by a mobile money top-up, or by handing cash to a cash-deposit agent |
+| Agent collects CoD cash | Agent's cash-in-hand ↑ (the agent owes Nyange the cash). Nothing is credited to sellers or the agent yet |
+| Agent hands over CoD cash | Agent's wallet float → Nyange's company wallet, or the agent's mobile money payment → Nyange's company wallet; the agent's cash-in-hand ↓. Then the sellers' wallets (price less commission, **on hold**) and the agent's wallet (fee less cut, **on hold**) are credited |
 | Withdrawal | Available wallet money → the actor's own mobile money number |
 
 ### 6.3 Holds *(decided)*
@@ -300,14 +306,16 @@ per area, or per agent, and **can be waived entirely**. At launch they are all w
 | Control | Meaning |
 |---|---|
 | CoD enabled | CoD can be turned on or off |
-| Float limit | The most cash an agent may hold or have promised to collect at once |
-| Settlement deadline | How long collected cash may be held before it must be settled |
+| Cash-in-hand limit | The most cash an agent may hold or have promised to collect at once |
+| Handover deadline | How long collected cash may be held before it must be handed over (sellers and the agent are not credited until then) |
 | Security deposit | A deposit an agent must put up before taking CoD tasks |
 | Verification required | Only verified agents may take CoD tasks |
 
-**Float limit rule:** cash already held + cash promised on tasks the agent has claimed but not completed + the cash on the
+*Float* means money an agent keeps in their own wallet in advance, so they can hand over CoD cash immediately.
+
+**Cash-in-hand limit rule:** cash already held + cash promised on tasks the agent has claimed but not completed + the cash on the
 task being claimed must not exceed the limit. A claim that lapses releases its promised cash. When a CoD task is completed,
-its cash moves from "promised" to "held" exactly once.
+its cash moves from "promised" to "held" exactly once, and then to "handed over".
 
 ## 7. Invariants
 
@@ -331,8 +339,8 @@ Rules that must always hold, whatever technology implements them.
 11. Money history is permanent: it cannot be edited, removed or wiped by anyone, including administrators.
 12. A balance can always be re-derived from the history.
 13. The same payment instruction applied twice has the same effect as once.
-14. An agent's cash held plus promised never exceeds their float limit, where a limit is set.
-15. CoD cash is counted exactly once at every moment: as promised, then as held.
+14. An agent's cash held plus promised never exceeds their cash-in-hand limit, where a limit is set.
+15. CoD cash is counted exactly once at every moment: as promised, then as held, then as handed over. Sellers and the delivery agent are credited for a CoD order only after the full CoD amount has been handed over to Nyange's company wallet.
 
 **Delivery fees**
 16. Only Nyange sets delivery rates; sellers cannot.
@@ -349,14 +357,14 @@ Rules that must always hold, whatever technology implements them.
 
 **Wallets and holds**
 25. Every user has exactly one wallet, shared across all their roles. Every user is a buyer by default.
-26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task. Money leaves only by withdrawal from a wallet through mobile money. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
+26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; for a prepaid order the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task (for a CoD order, sellers and the agent are credited after the handover). Money leaves only by withdrawal from a wallet through mobile money. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
 27. Actors never pay each other directly through mobile money. Money between actors moves only through wallets.
 28. Every hold, of either kind, is a recorded object (wallet, amount, reason, the transaction it concerns, start, end, status, how it ended), never a flag.
 29. Held money cannot be withdrawn or paid out. Available balance equals balance minus all active holds and never goes below zero. A transfer in progress reserves its amount on the paying account (a transfer hold), so a wallet can never be overdrawn or double-spent.
 30. A transaction hold ends automatically at its end time unless it is extended or consumed; a transfer hold ends when its transfer completes or fails. Every change to a hold is recorded.
 31. Withdrawals go only to the actor's own verified mobile money number.
-32. Every payment transaction for an order, including the delivery agent's fee, carries a transaction hold from the moment the money lands until the order is delivered and the reversal window has passed. The part before delivery cannot be waived. Until the hold ends, the money can be taken back for a cancellation and cannot be withdrawn.
-33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer.
+32. Every payment transaction for an order, including the delivery agent's fee, carries a transaction hold from the moment the money lands until the order is delivered and the reversal window has passed (for CoD orders, where the money lands after delivery, the reversal window runs from the moment it lands). The part before delivery cannot be waived. Until the hold ends, the money can be taken back for a cancellation and cannot be withdrawn.
+33. For prepaid orders, the delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer.
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
 
 **Cancellation**
@@ -414,7 +422,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Checkout estimate road factor | 1.4 |
 | Commission on goods / on delivery | 0% / 0% |
 | CoD enabled | yes |
-| Agent float limit, settlement deadline, security deposit | waived |
+| Agent cash-in-hand limit, handover deadline, security deposit | waived |
 | Verification required for CoD | no |
 | Coverage gating (minimum sellers / agents) | off (1 / 1) |
 
@@ -457,14 +465,15 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 34. If some lines expire or are cancelled, the final fee is fixed over the lines that remain, and any increase needs the buyer's re-approval within 15 minutes (decision 25 and invariant 24).
 35. Withdrawals go only to the actor's own verified mobile money number.
 36. Until the buyer approves the final delivery fee, they can cancel the whole order at any time, free; any sellers who have claimed are released at no cost.
+37. CoD: Nyange credits sellers and the agent only after the collected cash has been handed over to Nyange's company wallet, either from the agent's float or through mobile money (section 4.5).
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
 - Appeals against an admin's dispute decision (the platform treats the decision as final), and recourse for problems found after the dispute window closes.
 - How quickly late-payment refunds are returned, and who bears provider charges on payments, refunds and withdrawals.
 - Unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
-- Enforcement and reporting of the cash settlement deadline and security deposit (waived at launch anyway).
-- How cash-deposit and cash-withdrawal agents move wallets, and netting an agent's earnings against cash owed. The platform keeps the rule that an agent settles cash owed from their wallet.
+- Enforcement and reporting of the handover deadline and security deposit (waived at launch anyway).
+- How cash-deposit and cash-withdrawal agents move wallets. The platform's rule is that CoD cash is handed over from the agent's float or by mobile money to Nyange's company wallet (section 4.5).
 - The base of the cancellation fee and how to collect it from a CoD buyer (the fee is 0% at launch).
 - Service flows: quotes, boda dispatch, print jobs with file proofs.
 - Vehicle class and load limits per task.
