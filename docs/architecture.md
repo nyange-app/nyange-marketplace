@@ -62,7 +62,6 @@ onto the platform later, if volume makes off-platform handling impractical.
 - **Pool:** the set of open order lines (for sellers) or open tasks (for agents). Each pool entry has a location and a
   search radius; only actors within range can see and claim it.
 - **Claim:** one actor taking an open pool entry. At most one actor can hold a claim on an entry at a time.
-- **Confirmation window:** how long a claimant has to confirm before the claim lapses and the entry returns to the pool.
 - **Wallet:** every user has one. All digital money lands in it first.
 - **Hold:** a time-limited restriction on part of a wallet's money, recorded as its own object, placed on transactions that may still be reversed (section 6.3).
 - **Dispute:** a recorded objection by a party to an order about specific lines and/or the delivery fee, which keeps the disputed money on hold until an admin decides (section 4.6).
@@ -106,10 +105,10 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 1. Eligible sellers (in range, with a matching standing offer in stock, active) see the open line.
 2. A seller claims by choosing their offer. The claim succeeds only if the offer price is at or below the buyer's ceiling.
-3. On success the seller's actual offer price is **locked** for that line, and the seller must confirm within the confirmation window or the line returns to the pool.
+3. On success the seller's actual offer price is **locked** for that line, and the claim is firm: there is no separate confirmation step.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
-6. Once confirmed, a seller is expected to stay with the line, but may withdraw before payment under the rules in section 4.6. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
+6. Once they have claimed, a seller is expected to stay with the line, but may withdraw before payment under the rules in section 4.6. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
 
 ### 4.3 Final fee, buyer decision, payment and preparation
 
@@ -126,8 +125,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 1. Eligible agents (active, capable of the task type, in range) see open tasks. A delivery task for an order appears only after the buyer has approved the final fee (and, for prepaid orders, paid).
 2. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
    - *Delivery fee:* when an agent claims a delivery task, Nyange passes the delivery fee (less its cut) from the amount it holds to the agent's wallet, **on hold** until the delivery is done and the reversal window has passed. If the agent later drops the task, that credit is taken back and the fee passes to the next agent who claims it.
-3. An agent must confirm within the confirmation window or the task returns to the pool.
-4. A task may have several ordered stops (for example two pickups then a drop-off).
+3. A task may have several ordered stops (for example two pickups then a drop-off).
 
 ### 4.5 Delivery and settlement
 
@@ -164,14 +162,13 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 
 | When the seller withdraws | What happens |
 |---|---|
-| Claimed, not yet confirmed | The seller lets go; the line returns to the pool. No consequence. |
-| Confirmed, fee not yet final (still waiting for other lines) | Allowed freely, because the buyer is not yet involved. The line returns to the pool at once. |
+| Claimed, fee not yet final (still waiting for other lines) | Allowed freely, because the buyer is not yet involved. The line returns to the pool at once. |
 | Fee final, buyer deciding (inside the 15 minutes) | The fee the buyer was shown is void. The buyer is told, and the order goes back to waiting for all lines. When it is whole again, a new final fee is fixed and the buyer gets a **fresh notification and a fresh 15 minutes**. |
 | Buyer approved, not yet paid | Handled as a drop-out after approval (below): up to 30 minutes for a replacement, and re-approval if the total rises. **Payment is paused** while any line is unclaimed, and the buyer gets **a fresh 60 minutes to pay** once the order is whole again. |
 | After payment | Handled by the drop-out rules below. |
 
 - A seller who withdraws a line cannot claim that same line of that order again.
-- The drop-out penalty rule (waived at launch) also covers withdrawals after confirming.
+- The drop-out penalty rule (waived at launch) also covers withdrawals after claiming.
 - A line that nobody claims within **30 minutes** of entering the pool (whether new or returned) expires; see below.
 
 #### A seller drops out after the buyer has approved
@@ -314,14 +311,14 @@ Rules that must always hold, whatever technology implements them.
 1. An order line has at most one seller holding a claim at any time. A task has at most one agent.
 2. Two actors claiming at the same moment each get a definite answer (won, or already taken). Neither fails, hangs or sees an error. This includes two sellers claiming different lines of the same order.
 3. Only an actor in range can claim; the price locked on a line is never above the buyer's approved ceiling.
-4. A claim that is not confirmed in time lapses, and the entry returns to the pool.
+4. A claim is firm once made. It ends only when the claimant withdraws or drops out under the rules in section 4.6, or the order is cancelled.
 5. Lines of a cancelled order cannot be claimed. If a cancellation and a claim happen at the same moment, one clearly happens first and the outcome is consistent.
 6. Only active sellers and agents can claim, and only if their account is also active. Suspending an account stops its claims.
 7. A seller can only fulfil from a location they own; an offer is always tied to a location of the offering seller.
 8. While a seller holds the exclusive window on an order's lines, others cannot claim them. When it ends, they open to everyone.
 
 **Rules by area**
-9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to confirmation windows, the seller exclusive window, cash controls and radius schedules alike.
+9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to the seller exclusive window, cash controls and radius schedules alike.
 
 **Money**
 10. Every money movement balances; nothing is created or lost.
@@ -384,7 +381,6 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 |---|---|
 | Initial search radius (orders, tasks) | 3 km |
 | Radius widening schedule | 7 km after 2 min; 15 km after 5 min |
-| Confirmation window (seller and agent) | 10 minutes |
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
 | Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal) |
