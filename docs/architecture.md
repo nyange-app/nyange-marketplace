@@ -225,7 +225,7 @@ becomes the agent's reward for the delivery.
 
 **Worked example** (rate UGX 1,500/km, no time term): shipment A would be 8 km alone, B 9 km alone, and the combined route is 12 km. Route cost 18,000. Shares 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 if delivered separately.
 
-**Fee timing:** the delivery fee is **final only after all lines are claimed**. The buyer is then notified (push and in-app) and has 15 minutes to approve or cancel (section 4.3). Nothing is charged for delivery before the buyer has seen and approved the final amount, and the amount does not change after it has been shown.
+**Fee timing:** the delivery fee is **final only after all lines are claimed**. The buyer is then notified (push and in-app) and has 15 minutes to approve or cancel (section 4.3). Nothing is charged for delivery before the buyer has seen and approved the final amount, and the buyer is never charged more than the amount they approved (if the total goes down, they pay the lower amount).
 
 **Indicative estimate:** at ordering, before any seller has claimed, the buyer sees only an estimate from straight-line distance multiplied by a road factor (default 1.4, to be calibrated against real routes). It is a guide, not a promise.
 
@@ -336,7 +336,7 @@ Rules that must always hold, whatever technology implements them.
 16. Only Nyange sets delivery rates; sellers cannot.
 17. Before rounding and capping, the shares of a route add up to 100% of the route cost. The fees actually charged can differ slightly (rounding adds up to one step per shipment; the cap can lower the total). The agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
 18. A shipment never pays more than it would travelling alone (when that cap is on), never less than the minimum fee, and is always rounded **up** to the step, never down.
-19. A delivery fee is fixed only after all of the order's lines are claimed. The buyer is never charged it without having been shown the final amount and given 15 minutes to approve or cancel, and the amount shown is the amount charged.
+19. A delivery fee is fixed only after all of the order's lines are claimed. The buyer is never charged it without having been shown the final amount and given 15 minutes to approve or cancel, and is never charged more than the amount they approved. If the total goes down, they pay the lower amount.
 20. The buyer is notified of the final fee through both a push and a durable in-app notification.
 
 **Order sequence**
