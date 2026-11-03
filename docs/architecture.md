@@ -18,6 +18,28 @@ implementation must satisfy the invariants in section 7.
 - **Assumption:** Nyange holds every licence and registration it needs to operate (wallet, payments, escrow,
   payouts, others). Legal and regulatory questions are out of scope here.
 
+## 1a. Operating principle: operations are mostly off the platform at launch
+
+At launch, Nyange's operations team handles much of the day-to-day coordination **off the platform**, by phone and
+messaging. The platform is not asked to model every recovery or exception. Its job is narrower:
+
+1. Enforce the rules and invariants in this document.
+2. Keep money safe: hold it, move it only as the rules allow, and record every movement.
+3. Record decisions and outcomes, so there is always a clear account of what happened and why.
+4. Tell the parties about status changes as the workflows specify.
+
+**Admin actions the platform must provide**, so operations can record what they decide:
+- raise a dispute, including on their own initiative (section 4.6);
+- record a dispute outcome: refund (a full refund cancels the order), partial refund, release to the seller and agent, or a split;
+- assign a specific agent to a task, even outside the radius (section 4.6).
+
+**Deliberately left to operations, and not designed in this document:** how agents report problems; noticing stalled or
+overdue deliveries; contacting buyers, sellers and agents; a takeover by another agent and the handover; returning goods
+to sellers; paying a first agent for part of a trip; agent liability and suspension.
+
+Whatever operations do, money only moves through the platform's actions, so the invariants keep holding. Items can move
+onto the platform later, if volume makes off-platform handling impractical.
+
 ## 2. Actors
 
 | Actor | Role |
@@ -174,7 +196,7 @@ The delivery task is offered within a radius that widens (3 km, then 7 km after 
 #### An agent drops out
 
 - Before pickup: the task goes back to the pool, the agent's credit is taken back, and the buyer sees at most a delay.
-- After pickup: the agent holds the goods (and cash, for CoD), so this is an incident for an admin to resolve *(open)*.
+- After pickup: the delivery is stalled. Operations raise a dispute (reason: delivery stalled) and handle the recovery off the platform. The dispute rules then apply: the money stays on hold, an admin records the outcome (delivered, or cancelled with a full refund to the buyer), and if the goods are lost, the agent is at fault and who bears the loss is decided case by case. *(Decided.)*
 
 #### Expiry and partial fulfilment
 
@@ -183,8 +205,8 @@ The delivery task is offered within a radius that widens (3 km, then 7 km after 
 
 #### Disputes *(decided)*
 
-- **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller).
-- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; other. The party gives a reason and evidence (photos, notes).
+- **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
+- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
 - **When:** from pickup until the reversal window ends (4 hours after delivery). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
@@ -346,7 +368,7 @@ Rules that must always hold, whatever technology implements them.
 
 **Delivery proof and disputes**
 42. A delivery is recorded only with proof (a photo plus the code the buyer gives at the door).
-43. Only a party to an order can raise a dispute, about specific lines and/or the delivery fee, from pickup until the reversal window ends.
+43. Only a party to an order, or operations, can raise a dispute, about specific lines and/or the delivery fee, from pickup until the reversal window ends.
 44. A dispute keeps the disputed money on hold until an admin decides; undisputed money is released normally.
 45. A dispute outcome moves money only through the holds and wallets, and refunds go to the buyer's wallet.
 
@@ -433,10 +455,10 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 30. When an agent is at fault in a dispute, who bears the loss is decided case by case by the admin.
 31. An unclaimed delivery task: operations and the buyer are alerted 10 minutes after the widest radius is reached; the buyer can wait or cancel free (no fee) while no agent has claimed; a hard deadline of 60 minutes cancels the order with a full refund.
 32. Self-collection by the buyer is not offered.
+33. Much of operations is handled off the platform at launch (section 1a). A delivery that stalls after pickup is a dispute raised by operations; recovery is handled off the platform and the dispute rules apply.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now).
-- Agents dropping a task after pickup (goods and cash in their hands).
 - The base of the cancellation fee (proposed: the item price of the lines already ready), compensating an agent already travelling when the buyer cancels, and how a fee is collected from a CoD buyer who has paid nothing.
 - Whether a party can appeal an admin's dispute decision. The admin's decision settles the dispute until that is decided.
 - Whether problems found after the dispute window closes (for example a faulty LPG cylinder found the next day) should get some recourse.
