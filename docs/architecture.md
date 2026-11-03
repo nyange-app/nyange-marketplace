@@ -116,19 +116,18 @@ onto the platform later, if volume makes off-platform handling impractical.
 1. When **all of the order's lines are claimed**, Nyange works out the best route and fixes the **final delivery fee** (section 5). Lines from the same seller location form one shipment; shipments from different sellers may share one route.
 2. The buyer is **notified of the final delivery fee** and the order total through **both a push notification and a durable in-app notification**, and has **15 minutes** to **approve or cancel** the whole order. They may cancel if the fee is higher than they are willing to pay.
 3. If the buyer **approves**:
-   - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**, by mobile money or from their wallet. The money is split on arrival: each seller's share lands **directly in that seller's wallet**, **on hold** (section 6); the delivery fee and Nyange's commission land with Nyange, and the delivery fee passes to the delivery agent's wallet, on hold, when an agent claims the delivery task (section 4.4). Sellers **ready their goods for pickup only after payment is confirmed**. If the order is not paid within the 60 minutes, it is cancelled and every seller is released. A mobile money payment confirmed after that is **refunded in full** and the order is **never revived**. To avoid late confirmations, *(proposed)* new payment attempts close a short time before the deadline, and an attempt already in progress at the deadline gets a short grace for the provider's answer instead of being cut off: if it succeeds the order proceeds, if it fails the order is cancelled.
+   - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**, by mobile money or from their wallet. The money is split on arrival: each seller's share lands **directly in that seller's wallet**, **on hold** (section 6); the delivery fee and Nyange's commission land with Nyange, and the delivery fee passes to the delivery agent's wallet, on hold, when an agent claims the delivery task (section 4.4). Sellers **ready their goods for pickup only after payment is confirmed**. If the order is not paid within the 60 minutes, it is cancelled and every seller is released. A mobile money payment confirmed after that is **refunded in full** and the order is **never revived**.
    - *CoD:* there is nothing to pay up front, so sellers ready their goods straight away.
 4. If the buyer **cancels**, or the 15 minutes pass with no decision (**silence cancels**), the order is cancelled and every seller is released. Nothing has been prepared yet, so nobody is out of pocket.
-5. The delivery task is then offered to agents. *(Proposed timing: once the buyer has approved and, for prepaid orders, payment is confirmed. Whether agents may see it before the goods are ready is open, section 9.)*
+5. The delivery task is then offered to agents. *(Decided: once the buyer has approved and, for prepaid orders, payment is confirmed. Pickup timing is coordinated off the platform.)*
 
 ### 4.4 Agent claims a task
 
 1. Eligible agents (active, capable of the task type, in range) see open tasks. A delivery task for an order appears only after the buyer has approved the final fee (and, for prepaid orders, paid).
-2. **Agent affinity:** a delivery task can be offered first, for a short window, to an agent already handling another shipment of the same order. After the window it opens to all eligible agents.
-3. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
+2. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
    - *Delivery fee:* when an agent claims a delivery task, Nyange passes the delivery fee (less its cut) from the amount it holds to the agent's wallet, **on hold** until the delivery is done and the reversal window has passed. If the agent later drops the task, that credit is taken back and the fee passes to the next agent who claims it.
-4. An agent must confirm within the confirmation window or the task returns to the pool.
-5. A task may have several ordered stops (for example two pickups then a drop-off).
+3. An agent must confirm within the confirmation window or the task returns to the pool.
+4. A task may have several ordered stops (for example two pickups then a drop-off).
 
 ### 4.5 Delivery and settlement
 
@@ -322,7 +321,7 @@ Rules that must always hold, whatever technology implements them.
 8. While a seller holds the exclusive window on an order's lines, others cannot claim them. When it ends, they open to everyone.
 
 **Rules by area**
-9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to confirmation windows, affinity windows, cash controls and radius schedules alike.
+9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to confirmation windows, the seller exclusive window, cash controls and radius schedules alike.
 
 **Money**
 10. Every money movement balances; nothing is created or lost.
@@ -352,7 +351,7 @@ Rules that must always hold, whatever technology implements them.
 28. A hold is a recorded object (wallet, amount, reason, the transaction it protects, start, end, status, how it ended), never a flag.
 29. Held money cannot be withdrawn or paid out. Available balance equals balance minus active holds and never goes below zero.
 30. A hold ends automatically at its end time unless it is extended or consumed, and every change to a hold is recorded.
-31. *(Proposed.)* Withdrawals go only to the actor's own verified mobile money number.
+31. Withdrawals go only to the actor's own verified mobile money number.
 32. Money credited to a seller or agent for an order is on hold from the moment it lands until the order is delivered and the reversal window has passed. Until then it can be taken back for a cancellation and cannot be withdrawn.
 33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
@@ -396,15 +395,12 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Escalate an unclaimed delivery task to operations, after the widest radius is reached | 10 minutes |
 | Hard deadline for an agent to claim a delivery task | 60 minutes after it was first offered |
 | Hold period on reversible transactions (the reversal window) | 4 hours, running from delivery for order payments (per transaction type, waivable) |
-| Payment cut-off before the deadline (new attempts stop) | to be decided |
-| Grace for a payment in progress at the deadline | to be decided |
 | Cancellation fee after goods are ready | 0% (tunable, waivable) |
 | How long a dropped line waits for a replacement seller | 30 minutes |
 | Penalty for a seller or agent who drops out after approval | waived at launch (tunable) |
 | Buyer re-approval window when a change raises the total | 15 minutes |
 | Buyer's choice window when no replacement is found | 15 minutes (no choice cancels) |
 | Final-fee notification channels | push and durable in-app |
-| Agent preference window (affinity) | to be decided |
 | Delivery rate per km | UGX 1,500 (placeholder) |
 | Delivery rate per minute | 0 (off, placeholder) |
 | Dwell allowance per stop | 0 |
@@ -423,7 +419,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 ## 9. Decisions and open questions
 
 **Decided**
-1. Per-line claiming, preferring the same seller and the same agent where possible.
+1. Per-line claiming, preferring the same seller where possible (seller affinity). Agent affinity is not used at launch, because one route is planned for the whole order.
 2. The buyer pays delivery on top of item price. Nyange, not sellers, sets the rates; the fee comes from the optimised route (section 5).
 3. The wallet is built by Nyange. All required licences are assumed in place.
 4. Technology stack: deferred. This document does not depend on it.
@@ -434,7 +430,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 9. The delivery fee is final only after all of the order's lines are claimed. The buyer is notified (push and in-app) and has 15 minutes to approve or cancel the order.
 10. After approval a prepaid buyer pays the full total. Sellers ready the goods for pickup only after payment is confirmed (prepaid) or straight after approval (CoD).
 11. Silence cancels: no decision within 15 minutes cancels the order, and a prepaid order with no confirmed payment within 60 minutes of approval is cancelled.
-12. A payment confirmed after its order was cancelled is refunded in full; the order is never revived. Preventing such late payments is preferred (cut-off and grace, section 4.3).
+12. A payment confirmed after its order was cancelled is refunded in full; the order is never revived. No payment cut-off or grace is used at launch.
 13. Every buyer, seller and agent has a wallet. Actors never pay each other directly through mobile money; they withdraw to their own mobile money number.
 14. Holds are real recorded objects, used on transactions that can still be reversed. Default hold period 4 hours, tunable and waivable.
 15. When a buyer pays an order (mobile money or wallet), each seller's share lands directly in the seller's wallet, on hold until delivery plus the reversal window. The delivery fee lands with Nyange and passes to the delivery agent's wallet, on hold, when the agent claims the task.
@@ -456,24 +452,23 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 31. An unclaimed delivery task: operations and the buyer are alerted 10 minutes after the widest radius is reached; the buyer can wait or cancel free (no fee) while no agent has claimed; a hard deadline of 60 minutes cancels the order with a full refund.
 32. Self-collection by the buyer is not offered.
 33. Much of operations is handled off the platform at launch (section 1a). A delivery that stalls after pickup is a dispute raised by operations; recovery is handled off the platform and the dispute rules apply.
+34. If some lines expire or are cancelled, the final fee is fixed over the lines that remain, and any increase needs the buyer's re-approval within 15 minutes (decision 25 and invariant 24).
+35. Withdrawals go only to the actor's own verified mobile money number.
+
+**Deferred** (handled by operations off the platform, or later; not designed here)
+- Compensating an agent already travelling when the buyer cancels.
+- Appeals against an admin's dispute decision (the platform treats the decision as final), and recourse for problems found after the dispute window closes.
+- How quickly late-payment refunds are returned, and who bears provider charges on payments, refunds and withdrawals.
+- Unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
+- Enforcement and reporting of the cash settlement deadline and security deposit (waived at launch anyway).
+- How cash-deposit and cash-withdrawal agents move wallets, and netting an agent's earnings against cash owed. The platform keeps the rule that an agent settles cash owed from their wallet.
+- The base of the cancellation fee and how to collect it from a CoD buyer (the fee is 0% at launch).
+- Service flows: quotes, boda dispatch, print jobs with file proofs.
+- Vehicle class and load limits per task.
+- Multi-buyer delivery rounds, which need ordering rules such as "pickup before drop".
 
 **Open**
-- Real values for the per-km and per-minute rates (placeholders for now).
-- The base of the cancellation fee (proposed: the item price of the lines already ready), compensating an agent already travelling when the buyer cancels, and how a fee is collected from a CoD buyer who has paid nothing.
-- Whether a party can appeal an admin's dispute decision. The admin's decision settles the dispute until that is decided.
-- Whether problems found after the dispute window closes (for example a faulty LPG cylinder found the next day) should get some recourse.
-- The payment cut-off before the deadline and the grace for a payment in progress at the deadline: how long each should be.
-- Refunds of late payments: how quickly they are returned, and who bears any provider charges.
-- What an open dispute does to holds (proposed: the hold is extended until resolved), and what happens when a refund is due after a hold has ended and the money has been withdrawn.
-- How cash-deposit and cash-withdrawal agents move wallets, and how an agent's CoD cash owed is settled; whether earnings may be netted against cash owed.
-- Whether withdrawals may go only to the actor's own verified mobile money number (proposed).
-- Provider charges on mobile money payments, refunds and withdrawals: who bears them.
-- Whether agents see the delivery task before the goods are ready, or only once they are.
-- When some lines expire or are cancelled, whether the final fee is fixed over the remaining lines, and when an order stops waiting for stragglers.
-- Whether agent affinity is still needed now that one route is planned for the whole order, or only for shipments delivered separately.
-- What happens to unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
-- Whether the mapping source works well enough for Uganda: coverage outside Kampala, boda (two-wheeler) routing, cost, and rules on storing results. Multi-buyer rounds also need ordering rules such as "pickup before drop".
-- How the settlement deadline and the security deposit are enforced and reported.
-- Service flows: quotes, boda dispatch, print jobs with file proofs.
-- Vehicle class and load limits per task (what a boda can carry decides whether batching is possible).
-- The agent preference window length.
+- Real values for the per-km and per-minute rates (placeholders for now). Nyange must supply them before launch.
+
+**To validate before building**
+- Whether the mapping source works well enough for Uganda: coverage outside Kampala, boda (two-wheeler) routing, cost, and rules on storing results.
