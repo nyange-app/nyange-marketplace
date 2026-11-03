@@ -63,7 +63,7 @@ onto the platform later, if volume makes off-platform handling impractical.
   search radius; only actors within range can see and claim it.
 - **Claim:** one actor taking an open pool entry. At most one actor can hold a claim on an entry at a time.
 - **Wallet:** every user has one. All digital money lands in it first.
-- **Hold:** a time-limited restriction on part of a wallet's money, recorded as its own object, placed on transactions that may still be reversed (section 6.3).
+- **Hold:** a restriction on part of a wallet's money, recorded as its own object. There are two kinds: a **transaction hold**, which protects money from a payment while it can still be reversed, and a short-lived **transfer hold**, which reserves money while a transfer is being effected so a wallet cannot be overdrawn (section 6.3).
 - **Dispute:** a recorded objection by a party to an order about specific lines and/or the delivery fee, which keeps the disputed money on hold until an admin decides (section 4.6).
 - **Area:** a named region of the country. Rules can be set per area and override the national defaults for anything
   located inside that area.
@@ -204,7 +204,7 @@ The delivery task is offered within a radius that widens (3 km, then 7 km after 
 - **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
 - **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
-- **When:** from pickup until the reversal window ends (4 hours after delivery). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
+- **When:** from pickup until the reversal window ends (4 hours after delivery by default; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
 - **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
 - **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
@@ -268,15 +268,19 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 
 ### 6.3 Holds *(decided)*
 
-A **hold** is a real, recorded object, never a flag on a wallet or a transaction. It protects money from being paid out
-while the transaction that produced it can still be reversed.
+There are two kinds of hold. Both are real, recorded objects, never flags on a wallet or a transaction.
 
-- **What a hold records:** the wallet, the amount, the reason, the transaction it protects, when it starts, when it ends, its status, and how it ended.
-- **Effect:** held money stays in the wallet's balance but cannot be withdrawn or paid out. **Available balance = balance minus active holds**, and it never goes below zero.
-- **Default hold period: 4 hours.** It is the reversal window. It can be set per transaction type and can be waived.
-- **Lifecycle:** a hold is *active*, then ends in one of three ways: *released* when its period ends (the money becomes available), *extended* (for example while a dispute is open, until it is resolved), or *consumed* (the held money is used to cover a reversal such as a refund).
-- A wallet can have many holds at once. Each is independent and its history is kept.
-- **Top-ups do not carry holds.** **Where holds apply** *(proposed)*: all money an order's payment credits to a seller or agent (the delivery fee from the moment the agent claims the task). The hold starts when the money lands and has no fixed end until the delivery is complete; the 4-hour period then runs from the moment of delivery. If the order is cancelled before delivery, the holds are consumed to return the money to the buyer.
+**Transaction hold (the reversal hold).** It protects money that has just been paid, while the payment can still be reversed. The recipient cannot withdraw or use it meanwhile.
+
+- **It applies to every payment transaction, with the same rules for all of them:** the sellers' shares, the delivery agent's fee, and any payment type added later. The one exemption is a mobile money top-up, which carries no hold (decision 18).
+- **How long:** from the moment the money lands until the order's delivery is complete (the *order hold*, which always applies and cannot be waived), and then for a further **reversal window of 4 hours by default**. The reversal window is tunable per transaction type and can be waived; waiving it releases the money at delivery.
+- **What it records:** the wallet, the amount, the reason, the transaction it protects, when it starts, when it ends, its status, and how it ended.
+- **Lifecycle:** *active*, then ends in one of three ways: *released* when its time is up (the money becomes available), *extended* (for example while a dispute is open, until it is resolved), or *consumed* (the held money is used to cover a reversal such as a refund).
+- If the order is cancelled before delivery, the holds are consumed to return the money to the buyer.
+
+**Transfer hold (the accounting hold).** It is short-lived. While a transfer between accounts or wallets is being effected, the amount is reserved on the paying account so it cannot be spent twice or overdrawn in the meantime. The system creates it and releases it as soon as the transfer completes or fails. Transfer holds do not replace transaction holds, and transaction holds do not replace transfer holds.
+
+**Effect on a balance:** available balance = balance minus all active holds (of both kinds), and it never goes below zero. A wallet can have many holds at once, each independent, with its history kept.
 
 ### 6.4 Ledger rules
 
@@ -345,11 +349,11 @@ Rules that must always hold, whatever technology implements them.
 25. Every user has exactly one wallet, shared across all their roles. Every user is a buyer by default.
 26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task. Money leaves only by withdrawal from a wallet through mobile money.
 27. Actors never pay each other directly through mobile money. Money between actors moves only through wallets.
-28. A hold is a recorded object (wallet, amount, reason, the transaction it protects, start, end, status, how it ended), never a flag.
-29. Held money cannot be withdrawn or paid out. Available balance equals balance minus active holds and never goes below zero.
-30. A hold ends automatically at its end time unless it is extended or consumed, and every change to a hold is recorded.
+28. Every hold, of either kind, is a recorded object (wallet, amount, reason, the transaction it concerns, start, end, status, how it ended), never a flag.
+29. Held money cannot be withdrawn or paid out. Available balance equals balance minus all active holds and never goes below zero. A transfer in progress reserves its amount on the paying account (a transfer hold), so a wallet can never be overdrawn or double-spent.
+30. A transaction hold ends automatically at its end time unless it is extended or consumed; a transfer hold ends when its transfer completes or fails. Every change to a hold is recorded.
 31. Withdrawals go only to the actor's own verified mobile money number.
-32. Money credited to a seller or agent for an order is on hold from the moment it lands until the order is delivered and the reversal window has passed. Until then it can be taken back for a cancellation and cannot be withdrawn.
+32. Every payment transaction for an order, including the delivery agent's fee, carries a transaction hold from the moment the money lands until the order is delivered and the reversal window has passed. The part before delivery cannot be waived. Until the hold ends, the money can be taken back for a cancellation and cannot be withdrawn.
 33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
 
@@ -390,7 +394,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Proof of delivery | photo plus the buyer's code |
 | Escalate an unclaimed delivery task to operations, after the widest radius is reached | 10 minutes |
 | Hard deadline for an agent to claim a delivery task | 60 minutes after it was first offered |
-| Hold period on reversible transactions (the reversal window) | 4 hours, running from delivery for order payments (per transaction type, waivable) |
+| Reversal window after delivery, on every payment transaction | 4 hours (per transaction type, tunable and waivable). The hold before delivery is not waivable |
 | Cancellation fee after goods are ready | 0% (tunable, waivable) |
 | How long a dropped line waits for a replacement seller | 30 minutes |
 | Penalty for a seller or agent who drops out after approval | waived at launch (tunable) |
@@ -428,7 +432,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 11. Silence cancels: no decision within 15 minutes cancels the order, and a prepaid order with no confirmed payment within 60 minutes of approval is cancelled.
 12. A payment confirmed after its order was cancelled is refunded in full; the order is never revived. No payment cut-off or grace is used at launch.
 13. Every buyer, seller and agent has a wallet. Actors never pay each other directly through mobile money; they withdraw to their own mobile money number.
-14. Holds are real recorded objects, used on transactions that can still be reversed. Default hold period 4 hours, tunable and waivable.
+14. Holds are real recorded objects. Transaction holds apply to every payment transaction (sellers' shares, the delivery agent's fee, any other): held from payment until delivery, then a 4-hour reversal window (tunable and waivable; the part before delivery is not waivable). Short-lived transfer holds against overdraws are separate and unchanged.
 15. When a buyer pays an order (mobile money or wallet), each seller's share lands directly in the seller's wallet, on hold until delivery plus the reversal window. The delivery fee lands with Nyange and passes to the delivery agent's wallet, on hold, when the agent claims the task.
 16. Everyone can top up their wallet from mobile money, whatever their role.
 17. Every user is a buyer by default; seller and agent are roles added to the account.
