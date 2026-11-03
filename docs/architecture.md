@@ -218,8 +218,8 @@ becomes the agent's reward for the delivery.
 
 1. Once **all of the order's lines are claimed**, a **single best route** is worked out over all stops. This gives the route's total distance and travel time, plus each shipment's own standalone distance and time (as if it travelled alone).
 2. **Route cost** = route kilometres × rate per km, plus (route minutes + a dwell allowance per stop) × rate per minute. The time term makes slow, congested routes cost more than short, fast ones. It is off until Nyange chooses a rate.
-3. Each shipment gets a **share** of the route cost; shares add up to 100%. Default rule: **weighted by standalone distance** (a farther seller carries more). Alternatives: equal shares, or weighted by standalone cost.
-4. A shipment's fee is its share, **rounded up** to the rounding step (default UGX 500), at least the minimum fee, and **never more than that shipment would pay travelling alone**.
+3. Each shipment gets a **share** of the route cost; shares add up to 100% (before rounding and capping). Default rule: **weighted by standalone distance** (a farther seller carries more). Alternatives: equal shares, or weighted by standalone cost.
+4. A shipment's fee is its share, **rounded up** to the rounding step (default UGX 500), at least the minimum fee, and **never more than that shipment would pay travelling alone**. The fees charged can therefore add up to slightly more or less than the route cost; the agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
 5. **Batching is only worthwhile if the combined route is not longer than the separate trips it replaces** (times an allowed ratio, default 1.0). Otherwise the shipments are delivered separately at their standalone fees.
 6. The agent's trip to the first pickup is **not** charged to the buyer.
 
@@ -334,7 +334,7 @@ Rules that must always hold, whatever technology implements them.
 
 **Delivery fees**
 16. Only Nyange sets delivery rates; sellers cannot.
-17. Shares of a route add up to 100% of the route cost.
+17. Before rounding and capping, the shares of a route add up to 100% of the route cost. The fees actually charged can differ slightly (rounding adds up to one step per shipment; the cap can lower the total). The agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
 18. A shipment never pays more than it would travelling alone (when that cap is on), never less than the minimum fee, and is always rounded **up** to the step, never down.
 19. A delivery fee is fixed only after all of the order's lines are claimed. The buyer is never charged it without having been shown the final amount and given 15 minutes to approve or cancel, and the amount shown is the amount charged.
 20. The buyer is notified of the final fee through both a push and a durable in-app notification.
