@@ -50,6 +50,8 @@ onto the platform later, if volume makes off-platform handling impractical.
 | **Field agent** | Claims tasks from a pool. Each agent has capabilities (delivery, market price capture, cash deposit, cash withdrawal, payment collection, more to be added). Belongs to Nyange's pool. |
 | **Admin** | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, sets rules and parameters. |
 
+**Operations** means Nyange's admins working day to day; "operations" and "admins" refer to the same people.
+
 **Every user is a buyer (customer) by default.** Becoming a seller, field agent or admin adds a role to the same account; one person can hold several roles. Every user has a **Nyange wallet** (section 6). A person has **one wallet**, shared across all their roles.
 
 ## 3. Core concepts
@@ -177,7 +179,6 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 - *(Decided.)* The line goes back to the pool for up to **30 minutes** and the buyer is told. The dropped seller's credit for that line is taken back and held by Nyange until a replacement seller claims the line or the buyer is refunded.
 - *(Decided.)* If a replacement claims and the order total is unchanged or lower, the order carries on. If the total would be higher (a pricier seller, or a changed delivery fee), the buyer must re-approve within **15 minutes**, otherwise the order is cancelled with a full refund. The same applies to any change that would raise what the buyer pays.
 - *(Decided.)* If nobody claims the line within the 30 minutes, the buyer chooses within 15 minutes: cancel the whole order with a full refund, or carry on without that line and be refunded for it. No choice within the 15 minutes cancels the order (silence cancels, as elsewhere).
-
 - **Penalties** for a seller or agent who drops out after the buyer has approved are a tunable rule (amount, and whether they apply at all). **They are waived at launch.**
 
 #### No agent claims the delivery task *(decided)*
@@ -348,14 +349,14 @@ Rules that must always hold, whatever technology implements them.
 
 **Wallets and holds**
 25. Every user has exactly one wallet, shared across all their roles. Every user is a buyer by default.
-26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task. Money leaves only by withdrawal from a wallet through mobile money.
+26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task. Money leaves only by withdrawal from a wallet through mobile money. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
 27. Actors never pay each other directly through mobile money. Money between actors moves only through wallets.
 28. Every hold, of either kind, is a recorded object (wallet, amount, reason, the transaction it concerns, start, end, status, how it ended), never a flag.
 29. Held money cannot be withdrawn or paid out. Available balance equals balance minus all active holds and never goes below zero. A transfer in progress reserves its amount on the paying account (a transfer hold), so a wallet can never be overdrawn or double-spent.
 30. A transaction hold ends automatically at its end time unless it is extended or consumed; a transfer hold ends when its transfer completes or fails. Every change to a hold is recorded.
 31. Withdrawals go only to the actor's own verified mobile money number.
 32. Every payment transaction for an order, including the delivery agent's fee, carries a transaction hold from the moment the money lands until the order is delivered and the reversal window has passed. The part before delivery cannot be waived. Until the hold ends, the money can be taken back for a cancellation and cannot be withdrawn.
-33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
+33. The delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer.
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
 
 **Cancellation**
