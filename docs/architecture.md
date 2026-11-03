@@ -32,6 +32,7 @@ messaging. The platform is not asked to model every recovery or exception. Its j
 - raise a dispute, including on their own initiative (section 4.6);
 - record a dispute outcome: refund (a full refund cancels the order), partial refund, release to the seller and agent, or a split;
 - assign a specific agent to a task, even outside the radius (section 4.6).
+- widen the search radius of an unclaimed task (section 4.6).
 
 **Deliberately left to operations, and not designed in this document:** how agents report problems; noticing stalled or
 overdue deliveries; contacting buyers, sellers and agents; a takeover by another agent and the handover; returning goods
