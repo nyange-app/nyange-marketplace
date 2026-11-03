@@ -301,13 +301,13 @@ There are two kinds of hold. Both are real, recorded objects, never flags on a w
 ### 6.5 Cash on delivery controls
 
 An agent holding collected cash is exposed to loss or theft. Every control below is a tunable rule, can be set nationally,
-per area, or per agent, and **can be waived entirely**. At launch they are all waived to make agent onboarding easy.
+per area, or per agent, and **can be waived entirely**. At launch they are all waived to make agent onboarding easy, **except the handover deadline**, which is active.
 
 | Control | Meaning |
 |---|---|
 | CoD enabled | CoD can be turned on or off |
 | Cash-in-hand limit | The most cash an agent may hold or have promised to collect at once |
-| Handover deadline | How long collected cash may be held before it must be handed over (sellers and the agent are not credited until then) |
+| Handover deadline | How long collected cash may be held before it must be handed over (sellers and the agent are not credited until then). **Active at launch: 4 hours after delivery.** *(Proposed consequence: when it passes, operations are alerted and the agent is offered no new CoD tasks until the cash is handed over.)* |
 | Security deposit | A deposit an agent must put up before taking CoD tasks |
 | Verification required | Only verified agents may take CoD tasks |
 
@@ -340,7 +340,7 @@ Rules that must always hold, whatever technology implements them.
 12. A balance can always be re-derived from the history.
 13. The same payment instruction applied twice has the same effect as once.
 14. An agent's cash held plus promised never exceeds their cash-in-hand limit, where a limit is set.
-15. CoD cash is counted exactly once at every moment: as promised, then as held, then as handed over. Sellers and the delivery agent are credited for a CoD order only after the full CoD amount has been handed over to Nyange's company wallet.
+15. CoD cash is counted exactly once at every moment: as promised, then as held, then as handed over. Sellers and the delivery agent are credited for a CoD order only after the full CoD amount has been handed over to Nyange's company wallet. *(Proposed: cash not handed over within 4 hours of delivery alerts operations and the agent is offered no new CoD tasks until it is.)*
 
 **Delivery fees**
 16. Only Nyange sets delivery rates; sellers cannot.
@@ -422,7 +422,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Checkout estimate road factor | 1.4 |
 | Commission on goods / on delivery | 0% / 0% |
 | CoD enabled | yes |
-| Agent cash-in-hand limit, handover deadline, security deposit | waived |
+| Agent cash-in-hand limit, security deposit | waived |
+| Handover deadline for CoD cash | 4 hours after delivery (active at launch) |
 | Verification required for CoD | no |
 | Coverage gating (minimum sellers / agents) | off (1 / 1) |
 
@@ -435,7 +436,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 4. Technology stack: deferred. This document does not depend on it.
 5. Nationwide, with radius-capped pools and areas opening on supply.
 6. Range pricing at checkout with a buyer-approved ceiling; the claim locks the seller's real price.
-7. All CoD controls are tunable and waivable, and ship waived.
+7. All CoD controls are tunable and waivable, and ship waived, except the handover deadline, which is active at launch at 4 hours after delivery.
 8. Batching: one best route, shares weighted by distance, cost by distance (plus an optional time term), agent's approach to the first pickup not charged.
 9. The delivery fee is final only after all of the order's lines are claimed. The buyer is notified (push and in-app) and has 15 minutes to approve or cancel the order.
 10. After approval a prepaid buyer pays the full total. Sellers ready the goods for pickup only after payment is confirmed (prepaid) or straight after approval (CoD).
@@ -472,7 +473,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Appeals against an admin's dispute decision (the platform treats the decision as final), and recourse for problems found after the dispute window closes.
 - How quickly late-payment refunds are returned, and who bears provider charges on payments, refunds and withdrawals.
 - Unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
-- Enforcement and reporting of the handover deadline and security deposit (waived at launch anyway).
+- Consequences beyond the alert for a late CoD handover, reporting of overdue cash, and the security deposit (waived at launch).
 - How cash-deposit and cash-withdrawal agents move wallets. The platform's rule is that CoD cash is handed over from the agent's float or by mobile money to Nyange's company wallet (section 4.5).
 - The base of the cancellation fee and how to collect it from a CoD buyer (the fee is 0% at launch).
 - Service flows: quotes, boda dispatch, print jobs with file proofs.
