@@ -207,6 +207,14 @@ A delivery task is offered within a radius that widens (3 km, then 7 km after 2 
 4. **Hard deadline: 60 minutes after the task was first offered.** If no agent has claimed it by then, that task is cancelled automatically: the holds on its shipment's lines are consumed, the buyer is refunded in full for those lines and their delivery fee, and its sellers are released with no penalty. The other shipments of the order carry on (partial fulfilment). If it was the order's only task, the whole order is cancelled.
 5. Sellers who had readied goods are not compensated at launch (the cancellation fee is 0% anyway). If a cancellation fee is ever introduced, it never applies when the cause is that no agent was found.
 
+#### A seller or agent claims and goes silent *(decided)*
+
+Claims are firm, so two deadlines catch a claimant who then does nothing:
+- **Seller:** must mark the goods **ready within 45 minutes** of payment (prepaid) or of approval (CoD). If not, operations are alerted, the buyer is told, and the line is treated as a **seller drop-out after approval**: it returns to the pool and the drop-out rules above apply.
+- **Agent:** must **pick up within 30 minutes** of claiming a delivery task. If not, the claim lapses and the task returns to the pool, with the agent's credit taken back, as for an agent drop-out before pickup.
+
+Both times are tunable per area.
+
 #### An agent drops out
 
 - Before pickup: the task goes back to the pool, the agent's credit is taken back, and the buyer sees at most a delay.
@@ -421,6 +429,10 @@ Rules that must always hold, whatever technology implements them.
 52. Where a second approval is required (a dispute outcome above the threshold; waived at launch), the outcome takes effect only once a second admin, different from the first, approves it.
 53. The platform keeps a reliability record per user and role (orders completed, withdrawals, drop-outs, late handovers, disputes raised and lost), visible to admins. It does not affect claiming.
 
+**Claimed but idle**
+54. A seller who has not marked goods ready within 45 minutes of payment (or of approval, for CoD) is treated as having dropped out, and operations and the buyer are told.
+55. An agent who has not picked up within 30 minutes of claiming loses the claim, and the task returns to the pool.
+
 ## 8. Tunable rules and parameters
 
 Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
@@ -437,6 +449,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Dispute window | until the reversal window ends (4 hours after delivery) |
 | Response period for the other parties in a dispute | 24 hours |
 | Dispute outcome amount that needs a second admin's approval | waived at launch (tunable) |
+| Time for a seller to mark goods ready | 45 minutes from payment (prepaid) or approval (CoD), tunable per area |
+| Time for an agent to pick up after claiming | 30 minutes, tunable per area |
 | Proof of delivery | the buyer's code (photo optional); if the code is unavailable, a photo and the reason "code unavailable" |
 | Escalate an unclaimed delivery task to operations, after the widest radius is reached | 10 minutes |
 | Hard deadline for an agent to claim a delivery task | 60 minutes after it was first offered |
@@ -511,6 +525,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 43. Launch revenue: a 5% commission on goods (of the item price, deducted from the seller's share) and a 0% cut of the delivery fee. When money is refunded, Nyange returns its commission on the refunded amount.
 44. The platform keeps a simple reliability record per user and role for admins (completed orders, withdrawals, drop-outs, late handovers, disputes raised and lost). No ratings, and it does not affect claiming.
 45. Provider reversals: a reversal after the money is available is recorded as a correcting entry against the wallet of the user whose payment was reversed. The wallet may go negative (a wallet debt) and cannot withdraw until it is cleared; operations pursue repayment off the platform.
+46. Claimed-but-idle deadlines: a seller must mark goods ready within 45 minutes of payment (or approval, for CoD) or is treated as dropped out; an agent must pick up within 30 minutes of claiming or loses the claim. Both are tunable per area.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
