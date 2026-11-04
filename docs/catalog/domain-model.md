@@ -65,20 +65,22 @@ The shape shared by a family of products.
 
 | Field | Type | Notes |
 |---|---|---|
-| `code` | string | Stable identifier, e.g. `grain` |
+| `code` | string | Stable identifier, e.g. `bulk_goods` |
 | `name` | localized text | |
 | `sale` | `by_measure` \| `by_piece` | How quantity and price are expressed |
 | `baseUnit` | string | `by_measure` only: `kg` or `L` |
-| `step`, `minimum` | number | `by_measure` only: quantities are multiples of `step`, at least `minimum` |
+| `step`, `minimum` | number | `by_measure` only: the default quantity step and minimum for products of this type. A product may override them |
 | `components` | Component[] | The separately priced parts. At least one |
 | `modes` | Mode[] | Optional. If omitted, one implicit mode `default` charges every component |
 | `fulfilment` | object | Type-level flags: `heavy`, `hazardous` |
 
-**Component:** `{ key, kind }`, where `kind` is one of `goods` (the thing sold), `contents` (what is inside a container, sold per refill) or `container` (the returnable vessel).
+**Component:** `{ key, names, kind }`, where `kind` is one of `goods` (the thing sold), `contents` (what is inside a container, sold per refill) or `container` (the returnable vessel). `names` is localized display text, for example "Contents" and "Container".
 
-**Mode:** `{ key, charges[], handBack? }`.
+**Mode:** `{ key, names, charges[], handBack? }`.
+- `names` is localized display text for the buyer's choice, for example "Swap (hand back an empty)" and "New (buy the container)".
 - `charges` lists component keys that are charged in this mode.
 - `handBack` is `{ component, mustMatch }`: the buyer hands back one unit of that component per unit ordered, and its specification values must match the variant's (`mustMatch: "specification"`).
+- The hand-back wording shown to the buyer is derived, not authored: "hand back one <component name> of the same <specification> per unit".
 - A type **returns empties** exactly when one of its modes has `handBack`. This is derived, not declared.
 
 **Rules:** every `charges` entry and every `handBack.component` names a declared component. `by_measure` types do not declare modes at launch.
@@ -98,6 +100,7 @@ A catalog entry that conforms to one type, with its own attributes and value lis
 | `unitName` | localized text | `by_piece` only: "cylinder", "bag", "bottle" |
 | `attributes` | Attribute[] | |
 | `exclusions` | map[] | Specification combinations that do not exist |
+| `step`, `minimum` | number | `by_measure` only, optional: override the type's defaults for this product |
 | `weights` | rule[] | Shipping weight per unit by specification, e.g. `{ when: {size: "13kg"}, kg: 28 }`. For `by_measure`, weight is the quantity |
 
 **Attribute:**
@@ -177,11 +180,11 @@ Taken when a seller's claim locks the price, and never changed.
 5. A seller location has at most one offer per variant.
 6. An offer prices only components its type declares. Amounts are positive whole UGX.
 7. A mode is offered only if every charged component is priced and the mode is in stock. The mode price is the sum of the charged component prices.
-8. `by_measure` quantities are multiples of the step and at least the minimum. `by_piece` quantities are whole units of at least 1.
+8. `by_measure` quantities are multiples of the product's step and at least its minimum (the product's own values, else the type's defaults). `by_piece` quantities are whole units of at least 1.
 9. A mode with `handBack` requires one unit of the named component per unit ordered, matching the variant's specification values.
 10. An order-line snapshot is fixed at the price lock and never changes, whatever later happens to the catalog or the offer.
 11. Retiring a value, variant or product pauses its offers for new orders. Snapshots and in-flight orders are untouched.
-12. Every value carries a name in each supported language and may carry aliases. Search matches names and aliases.
+12. Every value, mode and component carries a name in each supported language, and values may carry aliases. Search matches names and aliases.
 
 ---
 
@@ -192,15 +195,15 @@ Nothing below is product-specific. Each is read from the declarations.
 | Behaviour | Source |
 |---|---|
 | Display name | Product name + specification values in `displayOrder` |
-| Ordering form | Specification attributes, the mode choice (if the type has modes), the quantity control from the sale style |
-| Quantity rules | `by_measure`: `step`, `minimum`. `by_piece`: whole units |
+| Ordering form | Specification attributes, the mode choice by mode name (if the type has modes), the quantity control from the sale style |
+| Quantity rules | `by_measure`: the product's `step` and `minimum`, else the type's. `by_piece`: whole units |
 | Price range shown to a buyer | Lowest and highest mode price across eligible offers (in reach, mode offered and in stock) |
 | Buyer's price ceiling | The highest mode price in that range |
 | Which sellers can claim | Offers whose mode is offered, in stock and in reach |
 | Filters and search | Searchable attributes, value names and aliases |
 | Delivery handling | Fulfilment flags (heavy, hazardous, perishable, returns empties) and shipping weight |
 | What the agent collects at the door | `handBack` of the chosen mode |
-| Receipt lines | The charged components in the snapshot |
+| Receipt lines | The charged components in the snapshot, by component name |
 
 ---
 
@@ -213,26 +216,26 @@ Products and brands are real; **prices and weights are illustrative**.
 ```json
 {
   "types": {
-    "grain": {
-      "name": { "en": "Grain" },
-      "sale": "by_measure", "baseUnit": "kg", "step": 50, "minimum": 50,
-      "components": [ { "key": "goods", "kind": "goods" } ],
+    "bulk_goods": {
+      "name": { "en": "Bulk goods" },
+      "sale": "by_measure", "baseUnit": "kg", "step": 10, "minimum": 10,
+      "components": [ { "key": "goods", "names": { "en": "Goods" }, "kind": "goods" } ],
       "fulfilment": { "heavy": true }
     },
     "packaged": {
       "name": { "en": "Packaged good" },
       "sale": "by_piece",
-      "components": [ { "key": "goods", "kind": "goods" } ]
+      "components": [ { "key": "goods", "names": { "en": "Goods" }, "kind": "goods" } ]
     },
     "returnable": {
       "name": { "en": "Returnable container" },
       "sale": "by_piece",
-      "components": [ { "key": "contents", "kind": "contents" },
-                      { "key": "container", "kind": "container" } ],
+      "components": [ { "key": "contents", "names": { "en": "Contents" }, "kind": "contents" },
+                      { "key": "container", "names": { "en": "Container" }, "kind": "container" } ],
       "modes": [
-        { "key": "swap", "charges": ["contents"],
+        { "key": "swap", "names": { "en": "Swap (hand back an empty)" }, "charges": ["contents"],
           "handBack": { "component": "container", "mustMatch": "specification" } },
-        { "key": "new",  "charges": ["contents", "container"] }
+        { "key": "new",  "names": { "en": "New (buy the container)" }, "charges": ["contents", "container"] }
       ],
       "fulfilment": { "heavy": true }
     }
@@ -246,7 +249,7 @@ Products and brands are real; **prices and weights are illustrative**.
 {
   "products": {
     "maize": {
-      "type": "grain", "names": { "en": "Maize" }, "status": "published",
+      "type": "bulk_goods", "names": { "en": "Maize" }, "status": "published",
       "attributes": [
         { "key": "grade", "role": "specification", "searchable": true, "displayOrder": 1,
           "values": [ { "key": "A", "names": { "en": "Grade A" }, "sortOrder": 1 },
@@ -263,7 +266,7 @@ Products and brands are real; **prices and weights are illustrative**.
       ]
     },
     "beans": {
-      "type": "grain", "names": { "en": "Beans" }, "status": "published",
+      "type": "bulk_goods", "names": { "en": "Beans" }, "status": "published",
       "attributes": [
         { "key": "variety", "role": "specification", "searchable": true, "displayOrder": 1,
           "values": [ { "key": "k132", "names": { "en": "K132" }, "aliases": ["Nambale"], "sortOrder": 1 },
@@ -380,7 +383,7 @@ Variant counts: maize 6 (grade × state), beans 12 (variety × grade × state), 
 
 **S3. The same LPG, new.** Only `of_3` offers `new`, because `of_4` has no container price and no `new` stock. The price is 115,000 + 150,000 = 265,000, with no hand-back.
 
-**S4. Add soya flour.** Another `by_measure` product. Author a product block with its attributes and values; no type or code changes.
+**S4. Add soya flour.** Another `by_measure` product of type `bulk_goods`. Author a product block with its attributes and values; no type or code changes.
 
 **S5. Add Hass 6 kg.** Already declared. A seller just offers on `lpg:brand=hass:size=6kg`.
 
@@ -464,7 +467,7 @@ Variant counts: maize 6 (grade × state), beans 12 (variety × grade × state), 
 - The official grade scheme for cereals (none found). The grade values here are placeholders.
 - Whether maize variety is really descriptive for buyers (it is a specification for beans). Confirm with traders.
 - Whether "grade A or better" matching should be allowed later to enlarge pools.
-- Whether `by_measure` goods need a minimum and step smaller than 50 kg.
+- Real step and minimum quantities per product, from traders. The 10 kg defaults are placeholders; households and bulk buyers differ.
 - Real shipping weights for cylinders and bottles.
 - Languages beyond English (Luganda) and their search aliases.
 - How services will extend the vocabulary.
