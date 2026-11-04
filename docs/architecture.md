@@ -118,7 +118,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 1. When **all of the order's lines are claimed**, Nyange works out the best route and fixes the **final delivery fee** (section 5). Lines from the same seller location form one shipment; shipments from different sellers may share one route.
 2. The buyer is **notified of the final delivery fee** and the order total through **both a push notification and a durable in-app notification**, and has **15 minutes** to **approve or cancel** the whole order. They may cancel if the fee is higher than they are willing to pay.
 3. If the buyer **approves**:
-   - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**, by mobile money or from their wallet. The money is split on arrival: each seller's share lands **directly in that seller's wallet**, **on hold** (section 6); the delivery fee and Nyange's commission land with Nyange, and the delivery fee passes to the delivery agent's wallet, on hold, when an agent claims the delivery task (section 4.4). Sellers **ready their goods for pickup only after payment is confirmed**. If the order is not paid within the 60 minutes, it is cancelled and every seller is released. A mobile money payment confirmed after that is **refunded in full** and the order is **never revived**.
+   - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**, by mobile money or from their wallet. The money is split on arrival: each seller's share lands **directly in that seller's wallet**, **on hold** (section 6); the delivery fee and Nyange's commission land with Nyange, and the delivery fee passes to the delivery agent's wallet, on hold, when an agent claims the delivery task (section 4.4). Sellers **ready their goods for pickup only after payment is confirmed**. If the order is not paid within the 60 minutes, it is cancelled and every seller is released. A payment that arrives after that is not applied (it lands in the payer's wallet, section 6.2) and the order is **never revived**.
    - *CoD:* there is nothing to pay up front, so sellers ready their goods straight away.
 4. If the buyer **cancels**, or the 15 minutes pass with no decision (**silence cancels**), the order is cancelled and every seller is released. Nothing has been prepared yet, so nobody is out of pocket.
 5. The delivery task (or tasks, if the shipments are not batched) is then offered to agents. *(Decided: once the buyer has approved and, for prepaid orders, payment is confirmed. Pickup timing is coordinated off the platform.)*
@@ -150,7 +150,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 #### Before payment
 
 - Until the buyer approves the final delivery fee, they can cancel the **whole order at any time, free**. Any sellers who have claimed lines are released at no cost to them. *(Decided.)*
-- If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases nothing has been paid for the order, so nothing is refunded. A payment confirmed after the order was cancelled is **refunded in full** and the order is **never revived**. *(Decided.)*
+- If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases nothing has been paid for the order, so nothing is refunded. A payment that arrives after the order was cancelled is not applied: it lands in the payer's wallet (section 6.2), and the order is **never revived**. *(Decided.)*
 
 #### Buyer cancels after payment *(decided)*
 
@@ -269,10 +269,17 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Dispute decided | Refund: held money consumed and returned to the buyer's wallet; otherwise released to the seller and agent; or a split |
 | Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which stays with the sellers of the ready lines |
 | Seller drops a line before delivery | The seller's credit for that line is taken back (hold consumed) and held by Nyange until a replacement seller claims it (credited on hold) or the buyer is refunded |
-| Payment confirmed after the order was cancelled | Returned in full to the buyer's wallet; it never reaches sellers or the agent |
+| Payment that cannot be applied (order cancelled or not payable, or amount below the approved total) | The whole amount lands in the payer's wallet; none of it reaches sellers or the agent |
+| Payment above the approved total | The approved total is applied as normal; the excess lands in the payer's wallet |
 | Agent collects CoD cash | Agent's cash-in-hand ↑ (the agent owes Nyange the cash). Nothing is credited to sellers or the agent yet |
 | Agent hands over CoD cash | Agent's wallet float → Nyange's company wallet, or the agent's mobile money payment → Nyange's company wallet; the agent's cash-in-hand ↓. Then the sellers' wallets (price less commission, **on hold**) and the agent's wallet (fee less cut, **on hold**) are credited |
 | Withdrawal | Available wallet money → the actor's own mobile money number |
+
+**Payments that cannot be applied.** Mobile money confirmations arrive later and land directly in sellers' wallets, so the rule is strict *(decided)*:
+- A payment is applied to an order only if the order is **payable** (all lines claimed, the fee approved by the buyer, and inside the payment window) and the amount is **at least the approved total**.
+- If the amount is **more** than the approved total, the approved total is applied and the **excess lands in the payer's wallet**.
+- If the order is **not payable** (cancelled; paused because a line is unclaimed; the fee voided or the total awaiting re-approval; the payment window passed), or the amount is **below** the approved total, **none of it is applied**: the whole amount lands in the payer's wallet, the payer is told, and the order is unchanged. The payer can then pay the order from their wallet, topping up the difference if needed.
+- If the paying mobile money number belongs to no user, operations return the money (deferred).
 
 ### 6.3 Holds *(decided)*
 
@@ -353,7 +360,7 @@ Rules that must always hold, whatever technology implements them.
 21. No delivery task is offered to agents before the buyer has approved the final fee and, for prepaid orders, payment is confirmed.
 22. For prepaid orders, sellers ready goods for pickup only after payment is confirmed. For CoD orders, only after the buyer has approved. No seller prepares goods before the buyer has approved.
 23. An order that is not approved within 15 minutes, or (prepaid) not paid within 60 minutes of approval, is cancelled and every seller is released.
-24. A cancelled order is never revived. Money already paid for it is returned to the buyer's wallet, and a payment confirmed after the order was cancelled is refunded in full without ever reaching sellers or the agent.
+24. A cancelled order is never revived. Money already paid for it is returned to the buyer's wallet, and a payment that arrives after the order was cancelled lands in the payer's wallet without ever reaching sellers or the agent.
 
 **Wallets and holds**
 25. Every user has exactly one wallet, shared across all their roles. Every user is a buyer by default.
@@ -371,7 +378,7 @@ Rules that must always hold, whatever technology implements them.
 35. After payment the buyer can cancel only the whole order, and only before any shipment is picked up. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
 36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nobody can withdraw it first.
 37. A line dropped by a seller returns to the pool. The dropped seller keeps nothing for it, and the money for that line stays with Nyange until a replacement claims it or the buyer is refunded.
-38. No payment is accepted for an order while any of its lines is unclaimed. When the order is whole again the buyer gets a fresh 60 minutes to pay.
+38. A payment is applied to an order only if the order is payable and the amount is at least the approved total. Any amount above the total goes to the payer's wallet, and a payment that cannot be applied lands entirely in the payer's wallet. While any line is unclaimed the order is not payable; when it is whole again the buyer gets a fresh 60 minutes to pay.
 39. A seller who withdraws a line cannot claim that same line of that order again.
 40. If a seller withdraws while the buyer is deciding on the final fee, that fee is void: the buyer is told, and gets a fresh notification and a fresh 15 minutes once a new final fee is fixed.
 41. An unclaimed line expires 30 minutes after it enters (or re-enters) the pool.
@@ -441,7 +448,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 9. The delivery fee is final only after all of the order's lines are claimed. The buyer is notified (push and in-app) and has 15 minutes to approve or cancel the order.
 10. After approval a prepaid buyer pays the full total. Sellers ready the goods for pickup only after payment is confirmed (prepaid) or straight after approval (CoD).
 11. Silence cancels: no decision within 15 minutes cancels the order, and a prepaid order with no confirmed payment within 60 minutes of approval is cancelled.
-12. A payment confirmed after its order was cancelled is refunded in full; the order is never revived. No payment cut-off or grace is used at launch.
+12. A payment that cannot be applied (order cancelled or not payable, or amount below the approved total) lands in the payer's wallet, and any excess over the approved total goes to the payer's wallet; the order is never revived. No payment cut-off or grace is used at launch.
 13. Every buyer, seller and agent has a wallet. Actors never pay each other directly through mobile money; they withdraw to their own mobile money number.
 14. Holds are real recorded objects. Transaction holds apply to every payment transaction (sellers' shares, the delivery agent's fee, any other): held from payment until delivery, then a 4-hour reversal window (tunable and waivable; the part before delivery is not waivable). Short-lived transfer holds against overdraws are separate and unchanged.
 15. When a buyer pays an order (mobile money or wallet), each seller's share lands directly in the seller's wallet, on hold until delivery plus the reversal window. The delivery fee lands with Nyange and passes to the delivery agent's wallet, on hold, when the agent claims the task.
@@ -471,7 +478,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
 - Appeals against an admin's dispute decision (the platform treats the decision as final), and recourse for problems found after the dispute window closes.
-- How quickly late-payment refunds are returned, and who bears provider charges on payments, refunds and withdrawals.
+- Who bears provider charges on payments, refunds and withdrawals.
+- Returning money paid from a mobile money number that belongs to no user.
 - Unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
 - Consequences beyond the alert for a late CoD handover, reporting of overdue cash, and the security deposit (waived at launch).
 - How cash-deposit and cash-withdrawal agents move wallets. The platform's rule is that CoD cash is handed over from the agent's float or by mobile money to Nyange's company wallet (section 4.5).
