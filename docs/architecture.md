@@ -134,7 +134,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.5 Delivery and settlement
 
-1. The agent collects the goods, delivers them, and records **proof of delivery** (a photo plus a code the buyer gives at the door) and the outcome. For a **swap** line, the agent also collects the buyer's empty container and records it (a photo). If the buyer has no empty to hand over, the swap cannot be completed and it is handled as a dispute (reason: swap not possible).
+1. The agent collects the goods, delivers them, and records **proof of delivery** and the outcome. Proof is the code the buyer gives at the door; a photo is then optional. If the buyer cannot give the code, the agent records the delivery with a **photo (required)** and the reason "code unavailable"; the buyer is told at once and the delivery is flagged. If the buyer refuses or cannot be reached, no delivery is recorded and it is handled as a dispute. For a **swap** line, the agent also collects the buyer's empty container and records it (a photo). If the buyer has no empty to hand over, the swap cannot be completed and it is handled as a dispute (reason: swap not possible).
 2. **Payment:**
    - *Mobile money / wallet:* the buyer's payment has already landed in the wallets of the sellers and the delivery agent, on hold (section 4.3).
    - *CoD:* the agent collects cash at the drop-off. The agent owes that cash to Nyange until they **hand it over**. **Nyange credits the sellers and the agent only once the full CoD amount has been handed over**; until then nobody is credited.
@@ -219,7 +219,7 @@ A delivery task is offered within a radius that widens (3 km, then 7 km after 2 
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
 - **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
 - **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
-- **Proof of delivery:** the agent must record it (a photo plus the code the buyer gives at the door), so a "not received" claim can be decided.
+- **Proof of delivery:** the agent must record it: the code the buyer gives at the door (photo optional), or, if the code is unavailable, a photo with the reason "code unavailable". This lets a "not received" claim be decided. A delivery recorded without the code is flagged and the buyer is told at once.
 - Problems discovered after the window has closed (for example a faulty LPG cylinder found the next day) are not covered at launch.
 
 ## 5. Delivery pricing
@@ -387,7 +387,7 @@ Rules that must always hold, whatever technology implements them.
 41. An unclaimed line expires 30 minutes after it enters (or re-enters) the pool.
 
 **Delivery proof and disputes**
-42. A delivery is recorded only with proof (a photo plus the code the buyer gives at the door).
+42. A delivery is recorded only with proof: the code the buyer gives at the door (photo optional), or, if the code is unavailable, a photo with the reason "code unavailable". A delivery recorded without the code is flagged and the buyer is told at once.
 43. Only a party to an order, or operations, can raise a dispute, about specific lines and/or the delivery fee, from pickup until the reversal window ends.
 44. A dispute keeps the disputed money on hold until an admin decides; undisputed money is released normally. A dispute raised before the window ends always takes effect, even if the release is due at that same moment.
 45. A dispute outcome moves money only through the holds and wallets, and refunds go to the buyer's wallet.
@@ -416,7 +416,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Time an unclaimed line waits before it expires | 30 minutes |
 | Dispute window | until the reversal window ends (4 hours after delivery) |
 | Response period for the other parties in a dispute | 24 hours |
-| Proof of delivery | photo plus the buyer's code |
+| Proof of delivery | the buyer's code (photo optional); if the code is unavailable, a photo and the reason "code unavailable" |
 | Escalate an unclaimed delivery task to operations, after the widest radius is reached | 10 minutes |
 | Hard deadline for an agent to claim a delivery task | 60 minutes after it was first offered |
 | Reversal window after delivery, on every payment transaction | 4 hours (per transaction type, tunable and waivable). The hold before delivery is not waivable |
@@ -473,7 +473,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 26. A seller may withdraw a claim before payment: free until the fee is final; a withdrawal during the buyer's decision voids the fee and restarts their 15 minutes; after approval it is handled as a drop-out, with payment paused and a fresh 60 minutes once the order is whole again. A seller cannot re-claim a line they withdrew.
 27. An unclaimed line expires after 30 minutes in the pool.
 28. Disputes: any party to an order can raise one, about specific lines and/or the delivery fee, from pickup to the end of the reversal window; the holds on the disputed amounts are extended; the other parties have 24 hours to respond; an admin decides.
-29. Delivery requires proof (a photo plus a code the buyer gives at the door).
+29. Delivery requires proof: the buyer's code (photo optional), or, if the code is unavailable, a photo with a reason; a delivery without the code is flagged and the buyer is told at once.
 30. When an agent is at fault in a dispute, who bears the loss is decided case by case by the admin.
 31. An unclaimed delivery task: operations and the buyer are alerted 10 minutes after the widest radius is reached; the buyer can wait or cancel free (no fee) while no agent has claimed; a hard deadline of 60 minutes cancels that task's shipment with a full refund (the whole order if it was the only task). These rules apply per delivery task.
 32. Self-collection by the buyer is not offered.
