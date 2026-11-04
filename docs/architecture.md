@@ -514,6 +514,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Refusing orders that nobody can fulfil: a placement-time check that sellers and agents are within reach (or coverage gating on by default). Until then such orders expire under the existing rules.
 - Multiple accounts and collusion: requiring identity-verified sellers and agents with one account per person, treating accounts known to belong to the same person as one person for the own-order rule, and detecting collusion. Operations watch for this at launch.
 - Who can see what: what buyers, sellers and agents may see about each other (exact drop point, names, phone numbers) at each stage. Not designed; product design decides, on the principle that each party sees only what it needs, for as long as it needs it.
+- Receipts, statements and tax invoicing: a receipt for the buyer, statements of sales or earnings for sellers and agents (showing commission and Nyange's cut), and any tax invoicing the tax authority requires of sellers and of Nyange. Not designed; to be confirmed with the relevant requirements.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now). Nyange must supply them before launch.
