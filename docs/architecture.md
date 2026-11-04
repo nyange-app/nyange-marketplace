@@ -57,7 +57,8 @@ onto the platform later, if volume makes off-platform handling impractical.
 ## 3. Core concepts
 
 - **Catalog:** the list of goods and services Nyange sells. Nyange owns it; sellers cannot add products, only offer on them.
-- **Offer:** a seller's standing price and stock for a catalog item, tied to one of the seller's own locations.
+- **Offer:** a seller's standing price and stock for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price for each mode the seller supports.
+- **Returnable container:** a catalog item sold in a container the buyer normally returns (LPG cylinders, 20L water bottles). Its order lines have a **container mode**: *swap* (the buyer hands over an empty and receives a full one) or *new* (the buyer buys the container with its contents).
 - **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
 - **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
 - **Shipment:** the lines from one seller location that travel together. Shipments that share a route are one delivery task with several stops; shipments that are not batched are each their own delivery task, so an order can have several delivery tasks.
@@ -99,15 +100,15 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.1 Buyer places an order
 
-1. Buyer chooses catalog items and quantities, pins a drop location, and picks a payment method.
-2. For each line, the buyer sees the **price range** across eligible standing offers in range (lowest to highest) and **approves up to the highest**. That approval is the line's price ceiling.
+1. Buyer chooses catalog items and quantities, pins a drop location, and picks a payment method. For a returnable-container item, the buyer also chooses **swap** or **new container**.
+2. For each line, the buyer sees the **price range** across eligible standing offers in range (lowest to highest) and **approves up to the highest**. That approval is the line's price ceiling. For a returnable container, the range is for the chosen container mode.
 3. The buyer also sees an **indicative delivery estimate** (section 5). It is not a commitment: the real fee is only known once every line is claimed (section 4.3), and the buyer decides then.
 4. Each line enters the order pool.
 
 ### 4.2 Seller claims a line
 
 1. Eligible sellers (in range, with a matching standing offer in stock, active) see the open line.
-2. A seller claims by choosing their offer. The claim succeeds only if the offer price is at or below the buyer's ceiling.
+2. A seller claims by choosing their offer. The claim succeeds only if the offer price (for the line's container mode, where there is one) is at or below the buyer's ceiling.
 3. On success the seller's actual offer price is **locked** for that line, and the claim is firm: there is no separate confirmation step.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
@@ -132,7 +133,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.5 Delivery and settlement
 
-1. The agent collects the goods, delivers them, and records **proof of delivery** (a photo plus a code the buyer gives at the door) and the outcome.
+1. The agent collects the goods, delivers them, and records **proof of delivery** (a photo plus a code the buyer gives at the door) and the outcome. For a **swap** line, the agent also collects the buyer's empty container and records it (a photo). If the buyer has no empty to hand over, the swap cannot be completed and it is handled as a dispute (reason: swap not possible).
 2. **Payment:**
    - *Mobile money / wallet:* the buyer's payment has already landed in the wallets of the sellers and the delivery agent, on hold (section 4.3).
    - *CoD:* the agent collects cash at the drop-off. The agent owes that cash to Nyange until they **hand it over**. **Nyange credits the sellers and the agent only once the full CoD amount has been handed over**; until then nobody is credited.
@@ -210,7 +211,7 @@ A delivery task is offered within a radius that widens (3 km, then 7 km after 2 
 #### Disputes *(decided)*
 
 - **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
-- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); other. The party gives a reason and evidence (photos, notes).
+- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, or the wrong kind); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
 - **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders *(proposed)*; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
@@ -394,6 +395,10 @@ Rules that must always hold, whatever technology implements them.
 47. A delivery task still unclaimed 60 minutes after it was first offered is cancelled automatically: its shipment's lines and delivery fee are refunded in full to the buyer and its sellers are released without penalty. The order's other shipments carry on.
 48. Ten minutes after a delivery task has reached its widest radius unclaimed, operations are alerted and the buyer is told.
 
+**Returnable containers**
+49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode.
+50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery.
+
 ## 8. Tunable rules and parameters
 
 Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
@@ -474,6 +479,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 35. Withdrawals go only to the actor's own verified mobile money number.
 36. Until the buyer approves the final delivery fee, they can cancel the whole order at any time, free; any sellers who have claimed are released at no cost.
 37. CoD: Nyange credits sellers and the agent only after the collected cash has been handed over to Nyange's company wallet, either from the agent's float or through mobile money (section 4.5).
+38. Returnable containers (LPG cylinders, 20L water bottles) are modelled on the platform: each line is a swap or a new container, offers price each mode, and the agent collects and records the empty at delivery.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
@@ -486,6 +492,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - The base of the cancellation fee and how to collect it from a CoD buyer (the fee is 0% at launch).
 - Service flows: quotes, boda dispatch, print jobs with file proofs.
 - Vehicle class and load limits per task.
+- Container deposits and ownership, the agent returning collected empties to the seller, and safety rules for carrying LPG.
 - Multi-buyer delivery rounds, which need ordering rules such as "pickup before drop".
 
 **Open**
