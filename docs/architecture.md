@@ -64,8 +64,8 @@ onto the platform later, if volume makes off-platform handling impractical.
 ## 3. Core concepts
 
 - **Catalog:** the list of goods and services Nyange sells. Nyange owns it; sellers cannot add products, only offer on them.
-- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price for each mode the seller supports.
-- **Returnable container:** a catalog item sold in a container the buyer normally returns (LPG cylinders, 20L water bottles). Its order lines have a **container mode**: *swap* (the buyer hands over an empty and receives a full one) or *new* (the buyer buys the container with its contents).
+- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each mode the seller supports.
+- **Returnable container:** a catalog **variant** sold in a container the buyer normally returns (LPG cylinders, 20L water bottles). The variant defines the container, for example its brand and size, because cylinders are brand-specific. Its order lines have a **container mode**: *swap* (the buyer hands over an empty of that brand and size and receives a full one) or *new* (the buyer buys the container with its contents; this is always a purchase, the container becomes the buyer's, and there are no deposits).
 - **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
 - **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
 - **Shipment:** the lines from one seller location that travel together. Shipments that share a route are one delivery task with several stops; shipments that are not batched are each their own delivery task, so an order can have several delivery tasks.
@@ -114,13 +114,13 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.2 Seller claims a line
 
-1. Eligible sellers (in range, with a matching standing offer in stock, active) see the open line.
+1. Eligible sellers (in range, with a matching standing offer in stock for the line's container mode where there is one, active) see the open line.
 2. A seller claims by choosing their offer. The claim succeeds only if the offer price (for the line's container mode, where there is one) is at or below the buyer's ceiling.
 3. On success the seller's actual offer price is **locked** for that line, and the claim is firm: there is no separate confirmation step.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
 6. Once they have claimed, a seller is expected to stay with the line, but may withdraw before payment under the rules in section 4.6. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
-7. Stock is a simple **in-stock** status on the offer; the platform does not count or reserve quantities. A line is claimed whole by one seller (lines are not split between sellers). A seller who cannot supply a line they claimed withdraws or drops out under the rules in section 4.6.
+7. Stock is a simple **in-stock** status on the offer (per container mode for a returnable container); the platform does not count or reserve quantities. A line is claimed whole by one seller (lines are not split between sellers). A seller who cannot supply a line they claimed withdraws or drops out under the rules in section 4.6.
 
 ### 4.3 Final fee, buyer decision, payment and preparation
 
@@ -141,7 +141,9 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.5 Delivery and settlement
 
-1. The agent collects the goods, delivers them, and records **proof of delivery** and the outcome. Proof is the code the buyer gives at the door; a photo is then optional. If the buyer cannot give the code, the agent records the delivery with a **photo (required)** and the reason "code unavailable"; the buyer is told at once and the delivery is flagged. If the buyer refuses or cannot be reached, no delivery is recorded and it is handled as a dispute. For a **swap** line, the agent also collects the buyer's empty container and records it (a photo). If the buyer has no empty to hand over, the swap cannot be completed and it is handled as a dispute (reason: swap not possible).
+1. The agent collects the goods, delivers them, and records **proof of delivery** and the outcome. Proof is the code the buyer gives at the door; a photo is then optional. If the buyer cannot give the code, the agent records the delivery with a **photo (required)** and the reason "code unavailable"; the buyer is told at once and the delivery is flagged. If the buyer refuses or cannot be reached, no delivery is recorded and it is handled as a dispute. For a **swap** line, the agent also collects the buyer's empty container and records it (a photo). If the buyer has no empty to hand over, or it is the wrong brand or size, or it is unsafe (the agent may refuse it), the swap cannot be completed and it is handled as a dispute (reason: swap not possible).
+
+   **Returning empties.** The agent carries each swap's empty back to the seller who supplied the full one, as part of the same task. The seller records receipt. If the seller is closed or unavailable, the agent records a photo and the reason "seller unavailable", and the return is flagged. The agent's delivery fee stays on hold until the empties are returned.
 2. **Payment:**
    - *Mobile money / wallet:* the buyer's payment has already landed in the wallets of the sellers and the delivery agent, on hold (section 4.3).
    - *CoD:* the agent collects cash at the drop-off. The agent owes that cash to Nyange until they **hand it over**. **Nyange credits the sellers and the agent only once the full CoD amount has been handed over**; until then nobody is credited.
@@ -228,7 +230,7 @@ Both times are tunable per area.
 #### Disputes *(decided)*
 
 - **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
-- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, or the wrong kind); other. The party gives a reason and evidence (photos, notes).
+- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, the wrong kind, or an unsafe one); empty not returned to the seller (raised by the seller); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
 - **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved. A dispute raised before the window ends always holds the money, whichever happens first: the release of the money checks for disputes at that instant.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists. An admin who is party to the order can never decide it, and above a set amount a second admin must approve the outcome (the threshold is waived at launch).
@@ -248,6 +250,7 @@ becomes the agent's reward for the delivery.
 4. A shipment's fee is its share, **rounded up** to the rounding step (default UGX 500), at least the minimum fee, and **never more than that shipment would pay travelling alone**. The fees charged can therefore add up to slightly more or less than the route cost; the agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
 5. **Batching is only worthwhile if the combined route is not longer than the separate trips it replaces** (times an allowed ratio, default 1.0). Otherwise the shipments are delivered separately, each as its own delivery task, at their standalone fees.
 6. The agent's trip to the first pickup is **not** charged to the buyer.
+7. **Return container factor.** A shipment that contains a swap line carries the empty back to its seller. Its share of the route cost, and its standalone cost used for the cap, are multiplied by the **return container factor, 1.5 by default**. This stands in for the return leg, which is not routed separately. The factor applies only to shipments with swap lines.
 
 **Worked example** (rate UGX 1,500/km, no time term): shipment A would be 8 km alone, B 9 km alone, and the combined route is 12 km. Route cost 18,000. Shares 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 if delivered separately.
 
@@ -377,7 +380,7 @@ Rules that must always hold, whatever technology implements them.
 
 **Delivery fees**
 16. Only Nyange sets delivery rates; sellers cannot.
-17. Before rounding and capping, the shares of a route add up to 100% of the route cost. The fees actually charged can differ slightly (rounding adds up to one step per shipment; the cap can lower the total). The agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
+17. Before rounding, capping and the return container factor, the shares of a route add up to 100% of the route cost. The fees actually charged can differ slightly (rounding adds up to one step per shipment; the cap can lower the total). The agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
 18. A shipment never pays more than it would travelling alone (when that cap is on), never less than the minimum fee, and is always rounded **up** to the step, never down.
 19. A delivery fee is fixed only after all of the order's lines are claimed. The buyer is never charged it without having been shown the final amount and given 15 minutes to approve or cancel, and is never charged more than the amount they approved. If the total goes down, they pay the lower amount.
 20. The buyer is notified of the final fee through both a push and a durable in-app notification.
@@ -421,8 +424,8 @@ Rules that must always hold, whatever technology implements them.
 48. Ten minutes after a delivery task has reached its widest radius unclaimed, operations are alerted and the buyer is told.
 
 **Returnable containers**
-49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode.
-50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery.
+49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode, and only a seller who offers that mode can claim it. The variant defines the container (brand and size); a new container is always a purchase.
+50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery. The agent returns the empty to the seller who supplied the full one, and the agent's delivery fee stays on hold until the return is recorded.
 
 **Admin actions**
 51. Every admin action is recorded with who did it, what, when and why.
@@ -468,6 +471,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Minimum delivery fee | 0 |
 | Rounding step | UGX 500 |
 | Cap fee at standalone cost | on |
+| Return container factor (shipments with swap lines) | 1.5 (tunable per area) |
 | Allowed detour ratio for batching | 1.0 |
 | Checkout estimate road factor | 1.4 |
 | Commission on goods / Nyange's cut of the delivery fee | 5% / 0% (the commission is 5% of the item price, deducted from the seller's share; the delivery fee is not charged commission) |
@@ -526,6 +530,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 44. The platform keeps a simple reliability record per user and role for admins (completed orders, withdrawals, drop-outs, late handovers, disputes raised and lost). No ratings, and it does not affect claiming.
 45. Provider reversals: a reversal after the money is available is recorded as a correcting entry against the wallet of the user whose payment was reversed. The wallet may go negative (a wallet debt) and cannot withdraw until it is cleared; operations pursue repayment off the platform.
 46. Claimed-but-idle deadlines: a seller must mark goods ready within 45 minutes of payment (or approval, for CoD) or is treated as dropped out; an agent must pick up within 30 minutes of claiming or loses the claim. Both are tunable per area.
+47. Returnable containers, refined: the flag sits on the variant, which defines the container (brand and size); a new container is always a purchase, with no deposits; stock and eligibility are per mode; the agent carries each swap's empty back to the supplying seller as part of the same task, priced by a return container factor of 1.5 on the swap shipment's share of the route cost; the agent's fee stays on hold until the return is recorded.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
@@ -538,7 +543,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - How to collect the cancellation fee from a CoD buyer, who has paid nothing (the fee is 0% at launch), and whether any part should compensate sellers or an agent already travelling.
 - Service flows: quotes, boda dispatch, print jobs with file proofs.
 - Vehicle class and load limits per task.
-- Container deposits and ownership, the agent returning collected empties to the seller, and safety rules for carrying LPG.
+- Safety rules for carrying LPG and other cylinders.
 - Multi-buyer delivery rounds, which need ordering rules such as "pickup before drop".
 - Refusing orders that nobody can fulfil: a placement-time check that sellers and agents are within reach (or coverage gating on by default). Until then such orders expire under the existing rules.
 - Multiple accounts and collusion: requiring identity-verified sellers and agents with one account per person, treating accounts known to belong to the same person as one person for the own-order rule, and detecting collusion. Operations watch for this at launch.
