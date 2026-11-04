@@ -153,6 +153,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 - Until the buyer approves the final delivery fee, they can cancel the **whole order at any time, free**. Any sellers who have claimed lines are released at no cost to them. *(Decided.)*
 - If the buyer cancels on seeing the final delivery fee, or does not decide within 15 minutes, the whole order is cancelled and nothing is delivered. If a prepaid buyer approves but payment is not confirmed within 60 minutes, the order is cancelled the same way. In these cases nothing has been paid for the order, so nothing is refunded. A payment that arrives after the order was cancelled is not applied: it lands in the payer's wallet (section 6.2), and the order is **never revived**. *(Decided.)*
+- **Overall time cap:** an order that is not **fully committed** within **3 hours** of being placed is cancelled and every seller is released. Fully committed means paid (prepaid orders) or approved with every line claimed (CoD orders). The cap runs through every restart: a seller's withdrawal can restart the buyer's 15 minutes or give a fresh 60 minutes to pay, but never extends the 3 hours. From the moment an order is fully committed, the later deadlines apply. *(Decided.)*
 
 #### Buyer cancels after payment *(decided)*
 
@@ -361,7 +362,7 @@ Rules that must always hold, whatever technology implements them.
 **Order sequence**
 21. No delivery task is offered to agents before the buyer has approved the final fee and, for prepaid orders, payment is confirmed.
 22. For prepaid orders, sellers ready goods for pickup only after payment is confirmed. For CoD orders, only after the buyer has approved. No seller prepares goods before the buyer has approved.
-23. An order that is not approved within 15 minutes, or (prepaid) not paid within 60 minutes of approval, is cancelled and every seller is released.
+23. An order that is not approved within 15 minutes, or (prepaid) not paid within 60 minutes of approval, is cancelled and every seller is released. So is an order that is not fully committed (paid, or for CoD approved with every line claimed) within 3 hours of being placed, however many times its clocks have restarted.
 24. A cancelled order is never revived. Money already paid for it is returned to the buyer's wallet, and a payment that arrives after the order was cancelled lands in the payer's wallet without ever reaching sellers or the agent.
 
 **Wallets and holds**
@@ -410,7 +411,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Radius widening schedule | 7 km after 2 min; 15 km after 5 min |
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
-| Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal) |
+| Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal, but never beyond the overall cap below) |
+| Overall time for an order to become fully committed | 3 hours from placing (tunable per area) |
 | Time an unclaimed line waits before it expires | 30 minutes |
 | Dispute window | until the reversal window ends (4 hours after delivery) |
 | Response period for the other parties in a dispute | 24 hours |
@@ -482,6 +484,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 37. CoD: Nyange credits sellers and the agent only after the collected cash has been handed over to Nyange's company wallet, either from the agent's float or through mobile money (section 4.5).
 38. Returnable containers (LPG cylinders, 20L water bottles) are modelled on the platform: each line is a swap or a new container, offers price each mode, and the agent collects and records the empty at delivery.
 39. Stock is a simple in-stock status: no quantity counting or reservation at launch. A line is claimed whole by one seller, and a seller who cannot supply withdraws or drops out under the existing rules.
+40. An order that is not fully committed within 3 hours of being placed is cancelled, however many times its clocks have restarted.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
