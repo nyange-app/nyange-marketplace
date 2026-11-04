@@ -340,7 +340,7 @@ per area, or per agent, and **can be waived entirely**. At launch they are all w
 |---|---|
 | CoD enabled | CoD can be turned on or off |
 | Cash-in-hand limit | The most cash an agent may hold or have promised to collect at once |
-| Handover deadline | How long collected cash may be held before it must be handed over (sellers and the agent are not credited until then). **Active at launch: 4 hours after delivery.** *(Proposed consequence: when it passes, operations are alerted and the agent is offered no new CoD tasks until the cash is handed over.)* |
+| Handover deadline | How long collected cash may be held before it must be handed over (sellers and the agent are not credited until then). **Active at launch: 4 hours after delivery.** When it passes, operations are alerted and the agent is offered no new CoD tasks until the cash is handed over. *(Decided.)* |
 | Security deposit | A deposit an agent must put up before taking CoD tasks |
 | Verification required | Only verified agents may take CoD tasks |
 
@@ -373,7 +373,7 @@ Rules that must always hold, whatever technology implements them.
 12. A balance can always be re-derived from the history.
 13. The same payment instruction applied twice has the same effect as once.
 14. An agent's cash held plus promised never exceeds their cash-in-hand limit, where a limit is set.
-15. CoD cash is counted exactly once at every moment: as promised, then as held, then as handed over. Sellers and the delivery agent are credited for a CoD order only after the full CoD amount has been handed over to Nyange's company wallet. *(Proposed: cash not handed over within 4 hours of delivery alerts operations and the agent is offered no new CoD tasks until it is.)*
+15. CoD cash is counted exactly once at every moment: as promised, then as held, then as handed over. Sellers and the delivery agent are credited for a CoD order only after the full CoD amount has been handed over to Nyange's company wallet. Cash not handed over within 4 hours of delivery alerts operations, and the agent is offered no new CoD tasks until it is.
 
 **Delivery fees**
 16. Only Nyange sets delivery rates; sellers cannot.
