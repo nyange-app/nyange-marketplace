@@ -501,6 +501,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Container deposits and ownership, the agent returning collected empties to the seller, and safety rules for carrying LPG.
 - Multi-buyer delivery rounds, which need ordering rules such as "pickup before drop".
 - Refusing orders that nobody can fulfil: a placement-time check that sellers and agents are within reach (or coverage gating on by default). Until then such orders expire under the existing rules.
+- Multiple accounts and collusion: requiring identity-verified sellers and agents with one account per person, treating accounts known to belong to the same person as one person for the own-order rule, and detecting collusion. Operations watch for this at launch.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now). Nyange must supply them before launch.
