@@ -172,7 +172,7 @@ After payment the buyer can cancel only the **whole order**, not single lines. A
 | Delivered | Not cancellable. Any problem is a dispute |
 
 - **Cancellation fee:** a percentage, tunable and waivable, **0% at launch**. *(Proposed base: a percentage of the item price of the lines that were ready, paid to the sellers of those lines.)*
-- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; each delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed that task. Any cancellation fee stays with the sellers concerned.
+- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; each delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed that task. Nyange returns its own commission on the refunded amount. Any cancellation fee stays with the sellers concerned.
 - **CoD orders:** nothing has been paid, so there is nothing to refund; the same stages apply.
 
 #### A seller withdraws a claim before payment *(decided)*
@@ -283,6 +283,8 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Agent hands over CoD cash | Agent's wallet float → Nyange's company wallet, or the agent's mobile money payment → Nyange's company wallet; the agent's cash-in-hand ↓. Then the sellers' wallets (price less commission, **on hold**) and the agent's wallet (fee less cut, **on hold**) are credited |
 | Withdrawal | Available wallet money → the actor's own mobile money number |
 
+**Refunds and Nyange's commission.** Nyange's commission lands with Nyange at payment, not in a hold. When money is refunded, in full or in part, Nyange also returns its commission (and any delivery cut) on the refunded amount, so the buyer gets back everything they paid.
+
 **Payments that cannot be applied.** Mobile money confirmations arrive later and land directly in sellers' wallets, so the rule is strict *(decided)*:
 - A payment is applied to an order only if the order is **payable** (all lines claimed, the fee approved by the buyer, and inside the payment window) and the amount is **at least the approved total**.
 - If the amount is **more** than the approved total, the approved total is applied and the **excess lands in the payer's wallet**.
@@ -384,7 +386,7 @@ Rules that must always hold, whatever technology implements them.
 
 **Cancellation**
 35. After payment the buyer can cancel only the whole order, and only before any shipment is picked up. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
-36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nobody can withdraw it first.
+36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nyange returns its own commission on the refunded amount. Nobody can withdraw it first.
 37. A line dropped by a seller returns to the pool. The dropped seller keeps nothing for it, and the money for that line stays with Nyange until a replacement claims it or the buyer is refunded.
 38. A payment is applied to an order only if the order is payable and the amount is at least the approved total. Any amount above the total goes to the payer's wallet, and a payment that cannot be applied lands entirely in the payer's wallet. While any line is unclaimed the order is not payable; when it is whole again the buyer gets a fresh 60 minutes to pay.
 39. A seller who withdraws a line cannot claim that same line of that order again.
@@ -445,7 +447,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Cap fee at standalone cost | on |
 | Allowed detour ratio for batching | 1.0 |
 | Checkout estimate road factor | 1.4 |
-| Commission on goods / on delivery | 0% / 0% |
+| Commission on goods / Nyange's cut of the delivery fee | 5% / 0% (the commission is 5% of the item price, deducted from the seller's share; the delivery fee is not charged commission) |
 | CoD enabled | yes |
 | Agent cash-in-hand limit, security deposit | waived |
 | Handover deadline for CoD cash | 4 hours after delivery (active at launch) |
@@ -497,6 +499,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 40. An order that is not fully committed within 3 hours of being placed is cancelled, however many times its clocks have restarted.
 41. A delivery task is offered to agents only once its goods are ready, so agents do not wait at sellers' premises.
 42. Admin safeguards: an admin can never raise, decide or assign on an order they are party to; every admin action is recorded; a dispute outcome above a set amount needs a second admin's approval (threshold waived at launch).
+43. Launch revenue: a 5% commission on goods (of the item price, deducted from the seller's share) and a 0% cut of the delivery fee. When money is refunded, Nyange returns its commission on the refunded amount.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
