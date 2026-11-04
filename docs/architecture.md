@@ -39,6 +39,8 @@ messaging. The platform is not asked to model every recovery or exception. Its j
 - Every admin action is recorded: who did it, what, when, and why.
 - A dispute outcome above a set amount needs a second admin's approval. The threshold is tunable and **waived at launch**.
 
+**Reliability record** *(decided)*: for each user and role, the platform keeps simple counts visible to admins: orders completed, claim withdrawals, drop-outs, late CoD handovers, disputes raised, and disputes decided against them. Operations use the counts for decisions such as suspension or CoD eligibility. There are no user ratings, and the counts do not affect claiming.
+
 **Deliberately left to operations, and not designed in this document:** how agents report problems; noticing stalled or
 overdue deliveries; contacting buyers, sellers and agents; a takeover by another agent and the handover; returning goods
 to sellers; paying a first agent for part of a trip; agent liability and suspension.
@@ -411,6 +413,7 @@ Rules that must always hold, whatever technology implements them.
 **Admin actions**
 51. Every admin action is recorded with who did it, what, when and why.
 52. Where a second approval is required (a dispute outcome above the threshold; waived at launch), the outcome takes effect only once a second admin, different from the first, approves it.
+53. The platform keeps a reliability record per user and role (orders completed, withdrawals, drop-outs, late handovers, disputes raised and lost), visible to admins. It does not affect claiming.
 
 ## 8. Tunable rules and parameters
 
@@ -500,6 +503,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 41. A delivery task is offered to agents only once its goods are ready, so agents do not wait at sellers' premises.
 42. Admin safeguards: an admin can never raise, decide or assign on an order they are party to; every admin action is recorded; a dispute outcome above a set amount needs a second admin's approval (threshold waived at launch).
 43. Launch revenue: a 5% commission on goods (of the item price, deducted from the seller's share) and a 0% cut of the delivery fee. When money is refunded, Nyange returns its commission on the refunded amount.
+44. The platform keeps a simple reliability record per user and role for admins (completed orders, withdrawals, drop-outs, late handovers, disputes raised and lost). No ratings, and it does not affect claiming.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
@@ -519,6 +523,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Who can see what: what buyers, sellers and agents may see about each other (exact drop point, names, phone numbers) at each stage. Not designed; product design decides, on the principle that each party sees only what it needs, for as long as it needs it.
 - Receipts, statements and tax invoicing: a receipt for the buyer, statements of sales or earnings for sellers and agents (showing commission and Nyange's cut), and any tax invoicing the tax authority requires of sellers and of Nyange. Not designed; to be confirmed with the relevant requirements.
 - Price competition among sellers: claiming is first-come, so speed decides and price does not (within the buyer's ceiling). Options include a short cheapest-first window before a line opens to every eligible seller. Not designed.
+- User ratings of sellers and agents, and using reliability to influence who can claim or what other users see. Not designed.
 
 **Open**
 - Real values for the per-km and per-minute rates (placeholders for now). Nyange must supply them before launch.
