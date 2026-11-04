@@ -215,7 +215,7 @@ A delivery task is offered within a radius that widens (3 km, then 7 km after 2 
 - **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
 - **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, or the wrong kind); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
-- **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders *(proposed)*; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved.
+- **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders *(proposed)*; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved. A dispute raised before the window ends always holds the money, whichever happens first: the release of the money checks for disputes at that instant.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
 - **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
 - **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
@@ -389,7 +389,7 @@ Rules that must always hold, whatever technology implements them.
 **Delivery proof and disputes**
 42. A delivery is recorded only with proof (a photo plus the code the buyer gives at the door).
 43. Only a party to an order, or operations, can raise a dispute, about specific lines and/or the delivery fee, from pickup until the reversal window ends.
-44. A dispute keeps the disputed money on hold until an admin decides; undisputed money is released normally.
+44. A dispute keeps the disputed money on hold until an admin decides; undisputed money is released normally. A dispute raised before the window ends always takes effect, even if the release is due at that same moment.
 45. A dispute outcome moves money only through the holds and wallets, and refunds go to the buyer's wallet.
 
 **Unclaimed delivery**
