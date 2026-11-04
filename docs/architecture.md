@@ -95,7 +95,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 4. The buyer has **15 minutes** to **approve or cancel**.
 5. On approval: a prepaid buyer **pays within 60 minutes**, by mobile money or from their wallet. The sellers' shares land **directly in the sellers' wallets**, on hold; the delivery fee lands with Nyange and passes to the delivery agent's wallet, on hold, when an agent claims the task. A CoD buyer has nothing to pay yet.
 6. Sellers **ready the goods for pickup** (prepaid: only after payment is confirmed; CoD: straight after approval).
-7. A field agent collects and delivers. For CoD, the cash is collected at the drop-off and then **handed over to Nyange**; only then are the sellers and the agent credited.
+7. Once the goods are ready, the delivery task is offered to agents. A field agent claims it, collects and delivers. For CoD, the cash is collected at the drop-off and then **handed over to Nyange**; only then are the sellers and the agent credited.
 8. After delivery, the holds on the payment end once the reversal window has passed (default 4 hours), and sellers and the agent can withdraw.
 
 ### 4.1 Buyer places an order
@@ -123,11 +123,11 @@ onto the platform later, if volume makes off-platform handling impractical.
    - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**, by mobile money or from their wallet. The money is split on arrival: each seller's share lands **directly in that seller's wallet**, **on hold** (section 6); the delivery fee and Nyange's commission land with Nyange, and the delivery fee passes to the delivery agent's wallet, on hold, when an agent claims the delivery task (section 4.4). Sellers **ready their goods for pickup only after payment is confirmed**. If the order is not paid within the 60 minutes, it is cancelled and every seller is released. A payment that arrives after that is not applied (it lands in the payer's wallet, section 6.2) and the order is **never revived**.
    - *CoD:* there is nothing to pay up front, so sellers ready their goods straight away.
 4. If the buyer **cancels**, or the 15 minutes pass with no decision (**silence cancels**), the order is cancelled and every seller is released. Nothing has been prepared yet, so nobody is out of pocket.
-5. The delivery task (or tasks, if the shipments are not batched) is then offered to agents. *(Decided: once the buyer has approved and, for prepaid orders, payment is confirmed. Pickup timing is coordinated off the platform.)*
+5. A delivery task (or tasks, if the shipments are not batched) is offered to agents **only once its goods are ready**: for a task with several pickups, once all the lines on it are ready; for a separate shipment, once that shipment's lines are ready. Goods are readied only after the buyer has approved and, for prepaid orders, paid, so the earlier conditions are already met. This way no agent waits at a seller's. Pickup timing is otherwise coordinated off the platform. *(Decided.)*
 
 ### 4.4 Agent claims a task
 
-1. Eligible agents (active, capable of the task type, in range) see open tasks. A delivery task for an order appears only after the buyer has approved the final fee (and, for prepaid orders, paid).
+1. Eligible agents (active, capable of the task type, in range) see open tasks. A delivery task for an order appears only once its goods are ready (which happens only after the buyer has approved the final fee and, for prepaid orders, paid).
 2. A claim is subject to the cash controls in section 6 when the task involves collecting cash.
    - *Delivery fee (prepaid orders):* when an agent claims a delivery task, Nyange passes the delivery fee (less its cut) from the amount it holds to the agent's wallet, **on hold** until the delivery is done and the reversal window has passed. If the agent later drops the task, that credit is taken back and the fee passes to the next agent who claims it. For CoD orders the agent's fee is credited after the handover instead (section 4.5).
 3. A task may have several ordered stops (for example two pickups then a drop-off).
@@ -360,7 +360,7 @@ Rules that must always hold, whatever technology implements them.
 20. The buyer is notified of the final fee through both a push and a durable in-app notification.
 
 **Order sequence**
-21. No delivery task is offered to agents before the buyer has approved the final fee and, for prepaid orders, payment is confirmed.
+21. No delivery task is offered to agents before its goods are ready. Goods are readied only after the buyer has approved the final fee and, for prepaid orders, payment is confirmed.
 22. For prepaid orders, sellers ready goods for pickup only after payment is confirmed. For CoD orders, only after the buyer has approved. No seller prepares goods before the buyer has approved.
 23. An order that is not approved within 15 minutes, or (prepaid) not paid within 60 minutes of approval, is cancelled and every seller is released. So is an order that is not fully committed (paid, or for CoD approved with every line claimed) within 3 hours of being placed, however many times its clocks have restarted.
 24. A cancelled order is never revived. Money already paid for it is returned to the buyer's wallet, and a payment that arrives after the order was cancelled lands in the payer's wallet without ever reaching sellers or the agent.
@@ -485,6 +485,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 38. Returnable containers (LPG cylinders, 20L water bottles) are modelled on the platform: each line is a swap or a new container, offers price each mode, and the agent collects and records the empty at delivery.
 39. Stock is a simple in-stock status: no quantity counting or reservation at launch. A line is claimed whole by one seller, and a seller who cannot supply withdraws or drops out under the existing rules.
 40. An order that is not fully committed within 3 hours of being placed is cancelled, however many times its clocks have restarted.
+41. A delivery task is offered to agents only once its goods are ready, so agents do not wait at sellers' premises.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
