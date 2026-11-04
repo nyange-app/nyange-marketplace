@@ -169,12 +169,12 @@ After payment the buyer can cancel only the **whole order**, not single lines. A
 | Stage | What the buyer can do |
 |---|---|
 | Paid, no line ready yet | Cancel **free**, with a full refund |
-| Goods ready, nothing picked up yet | Cancel. A **cancellation fee** compensates the sellers whose goods were ready. **The fee is 0% at launch**, so at launch this is also free. No fee ever applies while any delivery task of the order is unclaimed |
+| Goods ready, nothing picked up yet | Cancel. A **cancellation fee**, paid to Nyange, applies. **The fee is 0% at launch**, so at launch this is also free. No fee ever applies while any delivery task of the order is unclaimed |
 | Any shipment picked up, out for delivery | Cannot cancel. Refusing delivery becomes a dispute handled by an admin |
 | Delivered | Not cancellable. Any problem is a dispute |
 
-- **Cancellation fee:** a percentage, tunable and waivable, **0% at launch**. *(Proposed base: a percentage of the item price of the lines that were ready, paid to the sellers of those lines.)*
-- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; each delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed that task. Nyange returns its own commission on the refunded amount. Any cancellation fee stays with the sellers concerned.
+- **Cancellation fee:** a percentage of the item price of the lines that were ready, **paid to Nyange** (it does not go to the sellers). Tunable and waivable, **0% at launch**. *(Decided.)*
+- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; each delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed that task. Nyange returns its own commission on the refunded amount. Any cancellation fee is kept by Nyange.
 - **CoD orders:** nothing has been paid, so there is nothing to refund; the same stages apply.
 
 #### A seller withdraws a claim before payment *(decided)*
@@ -285,7 +285,7 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Delivery completed | The holds end after the reversal window (default 4 hours after delivery); the money becomes available |
 | Dispute raised | The holds on the disputed amounts are extended until the admin decides |
 | Dispute decided | Refund: held money consumed and returned to the buyer's wallet; otherwise released to the seller and agent; or a split |
-| Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which stays with the sellers of the ready lines |
+| Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which Nyange keeps |
 | Seller drops a line before delivery | The seller's credit for that line is taken back (hold consumed) and held by Nyange until a replacement seller claims it (credited on hold) or the buyer is refunded |
 | Payment that cannot be applied (order cancelled or not payable, or amount below the approved total) | The whole amount lands in the payer's wallet; none of it reaches sellers or the agent |
 | Provider reverses a payment after the money is available | A correcting entry debits the wallet of the user whose payment was reversed; the wallet can go negative (a wallet debt), withdrawals are blocked until it is cleared, and incoming credits clear the debt first |
@@ -401,7 +401,7 @@ Rules that must always hold, whatever technology implements them.
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it. An admin cannot raise, decide or assign anything on an order they are a party to.
 
 **Cancellation**
-35. After payment the buyer can cancel only the whole order, and only before any shipment is picked up. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
+35. After payment the buyer can cancel only the whole order, and only before any shipment is picked up. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch, paid to Nyange) applies.
 36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nyange returns its own commission on the refunded amount. Nobody can withdraw it first.
 37. A line dropped by a seller returns to the pool. The dropped seller keeps nothing for it, and the money for that line stays with Nyange until a replacement claims it or the buyer is refunded.
 38. A payment is applied to an order only if the order is payable and the amount is at least the approved total. Any amount above the total goes to the payer's wallet, and a payment that cannot be applied lands entirely in the payer's wallet. While any line is unclaimed the order is not payable; when it is whole again the buyer gets a fresh 60 minutes to pay.
@@ -535,7 +535,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Unclaimed tasks of other types (market price capture, cash deposit and withdrawal, payment collection).
 - Consequences beyond the alert for a late CoD handover, reporting of overdue cash, and the security deposit (waived at launch).
 - How cash-deposit and cash-withdrawal agents move wallets. The platform's rule is that CoD cash is handed over from the agent's float or by mobile money to Nyange's company wallet (section 4.5).
-- The base of the cancellation fee and how to collect it from a CoD buyer (the fee is 0% at launch).
+- How to collect the cancellation fee from a CoD buyer, who has paid nothing (the fee is 0% at launch), and whether any part should compensate sellers or an agent already travelling.
 - Service flows: quotes, boda dispatch, print jobs with file proofs.
 - Vehicle class and load limits per task.
 - Container deposits and ownership, the agent returning collected empties to the seller, and safety rules for carrying LPG.
