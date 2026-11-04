@@ -150,7 +150,7 @@ onto the platform later, if volume makes off-platform handling impractical.
    - *From float:* if the agent keeps money in their own wallet in advance (their *float*), they hand the cash over immediately from it.
    - *Through mobile money:* the agent deposits the cash onto their own mobile money, then pays Nyange's company wallet through the mobile money rail and records it in the app.
 
-   Once Nyange's company wallet has received the full CoD amount, the sellers' shares (price less commission) and the agent's fee (less Nyange's cut) are credited to their wallets, **on hold** like any other payment. Because delivery is already complete, the reversal window runs from the moment the money lands. *(Proposed: if a dispute is open when the handover completes, the disputed amounts are credited on hold and stay held until it is decided.)*
+   Once Nyange's company wallet has received the full CoD amount, the sellers' shares (price less commission) and the agent's fee (less Nyange's cut) are credited to their wallets, **on hold** like any other payment. Because delivery is already complete, the reversal window runs from the moment the money lands. If a dispute is open when the handover completes, the disputed amounts are credited on hold and stay held until it is decided. *(Decided.)*
 3. After delivery, the holds on the money paid for the order end once the reversal window has passed (default 4 hours after delivery), and the money becomes available to each seller and the agent. Nyange keeps its commission and cut.
 4. Sellers and agents withdraw their available money from their wallet to their own mobile money number.
 
