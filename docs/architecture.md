@@ -280,6 +280,7 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 | Buyer cancels after payment | Sellers' holds are consumed and the money is taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed; everything returns to the buyer's wallet, less any cancellation fee (0% at launch), which stays with the sellers of the ready lines |
 | Seller drops a line before delivery | The seller's credit for that line is taken back (hold consumed) and held by Nyange until a replacement seller claims it (credited on hold) or the buyer is refunded |
 | Payment that cannot be applied (order cancelled or not payable, or amount below the approved total) | The whole amount lands in the payer's wallet; none of it reaches sellers or the agent |
+| Provider reverses a payment after the money is available | A correcting entry debits the wallet of the user whose payment was reversed; the wallet can go negative (a wallet debt), withdrawals are blocked until it is cleared, and incoming credits clear the debt first |
 | Payment above the approved total | The approved total is applied as normal; the excess lands in the payer's wallet |
 | Agent collects CoD cash | Agent's cash-in-hand ↑ (the agent owes Nyange the cash). Nothing is credited to sellers or the agent yet |
 | Agent hands over CoD cash | Agent's wallet float → Nyange's company wallet, or the agent's mobile money payment → Nyange's company wallet; the agent's cash-in-hand ↓. Then the sellers' wallets (price less commission, **on hold**) and the agent's wallet (fee less cut, **on hold**) are credited |
@@ -292,6 +293,11 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 - If the amount is **more** than the approved total, the approved total is applied and the **excess lands in the payer's wallet**.
 - If the order is **not payable** (cancelled; paused because a line is unclaimed; the fee voided or the total awaiting re-approval; the payment window passed), or the amount is **below** the approved total, **none of it is applied**: the whole amount lands in the payer's wallet, the payer is told, and the order is unchanged. The payer can then pay the order from their wallet, topping up the difference if needed.
 - If the paying mobile money number belongs to no user, operations return the money (deferred).
+
+**Provider reversals** *(decided)*. A mobile money provider (or the payer through it) can sometimes reverse a payment after Nyange treated it as final.
+- A reversal is recorded as a **correcting entry** against the wallet of the user whose payment was reversed: the payer of an order, or the user who topped up.
+- If that takes the wallet below zero, it becomes a **wallet debt**. A wallet in debt cannot withdraw until the debt is cleared, and new credits to it clear the debt first. Operations pursue repayment off the platform.
+- *(Proposed.)* If the reversed money is still on hold (the order is not yet delivered, or the reversal window is still open), the holds are consumed to cover it instead, and an undelivered order is cancelled.
 
 ### 6.3 Holds *(decided)*
 
@@ -379,7 +385,7 @@ Rules that must always hold, whatever technology implements them.
 26. Digital money always lands in a wallet first. A payment for an order lands directly in the wallets of the sellers it is owed to; for a prepaid order the delivery fee lands with Nyange and passes to the delivery agent's wallet when the agent claims the task (for a CoD order, sellers and the agent are credited after the handover). Money leaves only by withdrawal from a wallet through mobile money. Anyone may top up their wallet from mobile money, and a top-up is available immediately (no hold).
 27. Actors never pay each other directly through mobile money. Money between actors moves only through wallets.
 28. Every hold, of either kind, is a recorded object (wallet, amount, reason, the transaction it concerns, start, end, status, how it ended), never a flag.
-29. Held money cannot be withdrawn or paid out. Available balance equals balance minus all active holds and never goes below zero. A transfer in progress reserves its amount on the paying account (a transfer hold), so a wallet can never be overdrawn or double-spent.
+29. Held money cannot be withdrawn or paid out. Available balance equals balance minus all active holds and never goes below zero, except for a wallet debt created by a provider reversal (section 6.2). A transfer in progress reserves its amount on the paying account (a transfer hold), so a wallet can never be overdrawn or double-spent.
 30. A transaction hold ends automatically at its end time unless it is extended or consumed; a transfer hold ends when its transfer completes or fails. Every change to a hold is recorded.
 31. Withdrawals go only to the actor's own verified mobile money number.
 32. Every payment transaction for an order, including the delivery agent's fee, carries a transaction hold from the moment the money lands until the order is delivered and the reversal window has passed (for CoD orders, where the money lands after delivery, the reversal window runs from the moment it lands). The part before delivery cannot be waived. Until the hold ends, the money can be taken back for a cancellation and cannot be withdrawn.
@@ -504,6 +510,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 42. Admin safeguards: an admin can never raise, decide or assign on an order they are party to; every admin action is recorded; a dispute outcome above a set amount needs a second admin's approval (threshold waived at launch).
 43. Launch revenue: a 5% commission on goods (of the item price, deducted from the seller's share) and a 0% cut of the delivery fee. When money is refunded, Nyange returns its commission on the refunded amount.
 44. The platform keeps a simple reliability record per user and role for admins (completed orders, withdrawals, drop-outs, late handovers, disputes raised and lost). No ratings, and it does not affect claiming.
+45. Provider reversals: a reversal after the money is available is recorded as a correcting entry against the wallet of the user whose payment was reversed. The wallet may go negative (a wallet debt) and cannot withdraw until it is cleared; operations pursue repayment off the platform.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
@@ -523,6 +530,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 - Who can see what: what buyers, sellers and agents may see about each other (exact drop point, names, phone numbers) at each stage. Not designed; product design decides, on the principle that each party sees only what it needs, for as long as it needs it.
 - Receipts, statements and tax invoicing: a receipt for the buyer, statements of sales or earnings for sellers and agents (showing commission and Nyange's cut), and any tax invoicing the tax authority requires of sellers and of Nyange. Not designed; to be confirmed with the relevant requirements.
 - Price competition among sellers: claiming is first-come, so speed decides and price does not (within the buyer's ceiling). Options include a short cheapest-first window before a line opens to every eligible seller. Not designed.
+- Recovering wallet debts from users who do not repay, and any effect of a debt on placing orders. Operations pursue repayment at launch.
 - User ratings of sellers and agents, and using reliability to influence who can claim or what other users see. Not designed.
 
 **Open**
