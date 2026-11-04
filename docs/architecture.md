@@ -60,7 +60,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 - **Offer:** a seller's standing price and stock for a catalog item, tied to one of the seller's own locations.
 - **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
 - **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
-- **Shipment:** the lines from one seller location that travel together.
+- **Shipment:** the lines from one seller location that travel together. Shipments that share a route are one delivery task with several stops; shipments that are not batched are each their own delivery task, so an order can have several delivery tasks.
 - **Task:** a unit of work for a field agent (a delivery, a price capture, a cash deposit, and so on).
 - **Pool:** the set of open order lines (for sellers) or open tasks (for agents). Each pool entry has a location and a
   search radius; only actors within range can see and claim it.
@@ -121,7 +121,7 @@ onto the platform later, if volume makes off-platform handling impractical.
    - *Mobile money / wallet:* the buyer pays the total within **60 minutes of approving**, by mobile money or from their wallet. The money is split on arrival: each seller's share lands **directly in that seller's wallet**, **on hold** (section 6); the delivery fee and Nyange's commission land with Nyange, and the delivery fee passes to the delivery agent's wallet, on hold, when an agent claims the delivery task (section 4.4). Sellers **ready their goods for pickup only after payment is confirmed**. If the order is not paid within the 60 minutes, it is cancelled and every seller is released. A mobile money payment confirmed after that is **refunded in full** and the order is **never revived**.
    - *CoD:* there is nothing to pay up front, so sellers ready their goods straight away.
 4. If the buyer **cancels**, or the 15 minutes pass with no decision (**silence cancels**), the order is cancelled and every seller is released. Nothing has been prepared yet, so nobody is out of pocket.
-5. The delivery task is then offered to agents. *(Decided: once the buyer has approved and, for prepaid orders, payment is confirmed. Pickup timing is coordinated off the platform.)*
+5. The delivery task (or tasks, if the shipments are not batched) is then offered to agents. *(Decided: once the buyer has approved and, for prepaid orders, payment is confirmed. Pickup timing is coordinated off the platform.)*
 
 ### 4.4 Agent claims a task
 
@@ -154,17 +154,17 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 #### Buyer cancels after payment *(decided)*
 
-After payment the buyer can cancel only the **whole order**, not single lines.
+After payment the buyer can cancel only the **whole order**, not single lines. An order's stage is that of its **most advanced shipment**: once any shipment is picked up, the buyer can no longer cancel.
 
 | Stage | What the buyer can do |
 |---|---|
 | Paid, no line ready yet | Cancel **free**, with a full refund |
-| Goods ready, not yet picked up | Cancel. A **cancellation fee** compensates the sellers whose goods were ready. **The fee is 0% at launch**, so at launch this is also free. No fee ever applies while no agent has claimed the delivery task |
-| Picked up, out for delivery | Cannot cancel. Refusing delivery becomes a dispute handled by an admin |
+| Goods ready, nothing picked up yet | Cancel. A **cancellation fee** compensates the sellers whose goods were ready. **The fee is 0% at launch**, so at launch this is also free. No fee ever applies while any delivery task of the order is unclaimed |
+| Any shipment picked up, out for delivery | Cannot cancel. Refusing delivery becomes a dispute handled by an admin |
 | Delivered | Not cancellable. Any problem is a dispute |
 
 - **Cancellation fee:** a percentage, tunable and waivable, **0% at launch**. *(Proposed base: a percentage of the item price of the lines that were ready, paid to the sellers of those lines.)*
-- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; the delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed the task. Any cancellation fee stays with the sellers concerned.
+- **Refund:** everything paid is returned to the buyer's wallet, less any cancellation fee. The sellers' holds are consumed and the money taken back; each delivery fee is returned from the agent's hold, or from Nyange if no agent has claimed that task. Any cancellation fee stays with the sellers concerned.
 - **CoD orders:** nothing has been paid, so there is nothing to refund; the same stages apply.
 
 #### A seller withdraws a claim before payment *(decided)*
@@ -187,14 +187,14 @@ After payment the buyer can cancel only the **whole order**, not single lines.
 - *(Decided.)* If nobody claims the line within the 30 minutes, the buyer chooses within 15 minutes: cancel the whole order with a full refund, or carry on without that line and be refunded for it. No choice within the 15 minutes cancels the order (silence cancels, as elsewhere).
 - **Penalties** for a seller or agent who drops out after the buyer has approved are a tunable rule (amount, and whether they apply at all). **They are waived at launch.**
 
-#### No agent claims the delivery task *(decided)*
+#### No agent claims a delivery task *(decided)*
 
-The delivery task is offered within a radius that widens (3 km, then 7 km after 2 minutes, then 15 km after 5 minutes). There is no price lever, because the delivery fee comes from the route.
+A delivery task is offered within a radius that widens (3 km, then 7 km after 2 minutes, then 15 km after 5 minutes). There is no price lever, because the delivery fee comes from the route. An order can have several delivery tasks (section 3), and these rules apply **to each task**.
 
 1. **Ten minutes after the widest radius is reached** with no claim, the task is flagged to operations (admins), and the buyer is told at the same moment. Operations can assign a specific agent directly (even outside the radius), widen the radius further, or contact the parties.
-2. The buyer chooses: keep waiting, or cancel with a full refund. Self-collection by the buyer is not offered.
-3. **While no agent has claimed the delivery task, the buyer can cancel with a full refund and no cancellation fee**, even if goods are ready, because the failure to find an agent is not the buyer's.
-4. **Hard deadline: 60 minutes after the task was first offered.** If no agent has claimed it by then, the order is cancelled automatically: the holds are consumed, the buyer is refunded in full, and sellers are released with no penalty.
+2. The buyer chooses: keep waiting, or cancel with a full refund. If nothing has been picked up yet, they cancel the whole order; if another shipment is already in progress, they cancel only the unclaimed shipment. Self-collection by the buyer is not offered.
+3. **While any delivery task of the order is unclaimed and nothing has been picked up, the buyer can cancel the whole order with a full refund and no cancellation fee**, even if goods are ready, because the failure to find an agent is not the buyer's.
+4. **Hard deadline: 60 minutes after the task was first offered.** If no agent has claimed it by then, that task is cancelled automatically: the holds on its shipment's lines are consumed, the buyer is refunded in full for those lines and their delivery fee, and its sellers are released with no penalty. The other shipments of the order carry on (partial fulfilment). If it was the order's only task, the whole order is cancelled.
 5. Sellers who had readied goods are not compensated at launch (the cancellation fee is 0% anyway). If a cancellation fee is ever introduced, it never applies when the cause is that no agent was found.
 
 #### An agent drops out
@@ -228,7 +228,7 @@ becomes the agent's reward for the delivery.
 2. **Route cost** = route kilometres × rate per km, plus (route minutes + a dwell allowance per stop) × rate per minute. The time term makes slow, congested routes cost more than short, fast ones. It is off until Nyange chooses a rate.
 3. Each shipment gets a **share** of the route cost; shares add up to 100% (before rounding and capping). Default rule: **weighted by standalone distance** (a farther seller carries more). Alternatives: equal shares, or weighted by standalone cost.
 4. A shipment's fee is its share, **rounded up** to the rounding step (default UGX 500), at least the minimum fee, and **never more than that shipment would pay travelling alone**. The fees charged can therefore add up to slightly more or less than the route cost; the agent's reward is the sum of the fees charged, and Nyange does not top up any difference.
-5. **Batching is only worthwhile if the combined route is not longer than the separate trips it replaces** (times an allowed ratio, default 1.0). Otherwise the shipments are delivered separately at their standalone fees.
+5. **Batching is only worthwhile if the combined route is not longer than the separate trips it replaces** (times an allowed ratio, default 1.0). Otherwise the shipments are delivered separately, each as its own delivery task, at their standalone fees.
 6. The agent's trip to the first pickup is **not** charged to the buyer.
 
 **Worked example** (rate UGX 1,500/km, no time term): shipment A would be 8 km alone, B 9 km alone, and the combined route is 12 km. Route cost 18,000. Shares 8/17 and 9/17, so A pays 8,500 and B pays 10,000, against 12,000 and 13,500 if delivered separately.
@@ -368,7 +368,7 @@ Rules that must always hold, whatever technology implements them.
 34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
 
 **Cancellation**
-35. After payment the buyer can cancel only the whole order, and only before pickup. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
+35. After payment the buyer can cancel only the whole order, and only before any shipment is picked up. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
 36. When an order is cancelled after payment, the money comes back to the buyer's wallet from the holds and from Nyange's holding, less only any cancellation fee. Nobody can withdraw it first.
 37. A line dropped by a seller returns to the pool. The dropped seller keeps nothing for it, and the money for that line stays with Nyange until a replacement claims it or the buyer is refunded.
 38. No payment is accepted for an order while any of its lines is unclaimed. When the order is whole again the buyer gets a fresh 60 minutes to pay.
@@ -383,8 +383,8 @@ Rules that must always hold, whatever technology implements them.
 45. A dispute outcome moves money only through the holds and wallets, and refunds go to the buyer's wallet.
 
 **Unclaimed delivery**
-46. While no agent has claimed an order's delivery task, the buyer can cancel with a full refund and no cancellation fee.
-47. A delivery task still unclaimed 60 minutes after it was first offered is cancelled automatically with a full refund to the buyer; sellers are released without penalty.
+46. While any delivery task of an order is unclaimed and nothing has been picked up, the buyer can cancel the whole order with a full refund and no cancellation fee.
+47. A delivery task still unclaimed 60 minutes after it was first offered is cancelled automatically: its shipment's lines and delivery fee are refunded in full to the buyer and its sellers are released without penalty. The order's other shipments carry on.
 48. Ten minutes after a delivery task has reached its widest radius unclaimed, operations are alerted and the buyer is told.
 
 ## 8. Tunable rules and parameters
@@ -450,7 +450,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 18. Mobile money top-ups carry no hold.
 19. One wallet per user, shared across all their roles.
 20. A user cannot fulfil their own order (claim its lines or deliver it).
-21. After payment the buyer can cancel only the whole order: free before any line is ready, with a cancellation fee once goods are ready (fee 0% at launch), and not at all once the goods are picked up (then it is a dispute).
+21. After payment the buyer can cancel only the whole order: free before any line is ready, with a cancellation fee once goods are ready (fee 0% at launch), and not at all once any shipment is picked up (then it is a dispute). An order's stage is that of its most advanced shipment.
 22. A seller who drops out after approval: the line goes back to the pool and waits up to 30 minutes for a replacement.
 23. Penalties for sellers and agents who drop out are waived at launch, and tunable.
 24. Anything that would raise what the buyer pays after they approved needs their re-approval within 15 minutes, otherwise the order is cancelled with a full refund.
@@ -460,7 +460,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 28. Disputes: any party to an order can raise one, about specific lines and/or the delivery fee, from pickup to the end of the reversal window; the holds on the disputed amounts are extended; the other parties have 24 hours to respond; an admin decides.
 29. Delivery requires proof (a photo plus a code the buyer gives at the door).
 30. When an agent is at fault in a dispute, who bears the loss is decided case by case by the admin.
-31. An unclaimed delivery task: operations and the buyer are alerted 10 minutes after the widest radius is reached; the buyer can wait or cancel free (no fee) while no agent has claimed; a hard deadline of 60 minutes cancels the order with a full refund.
+31. An unclaimed delivery task: operations and the buyer are alerted 10 minutes after the widest radius is reached; the buyer can wait or cancel free (no fee) while no agent has claimed; a hard deadline of 60 minutes cancels that task's shipment with a full refund (the whole order if it was the only task). These rules apply per delivery task.
 32. Self-collection by the buyer is not offered.
 33. Much of operations is handled off the platform at launch (section 1a). A delivery that stalls after pickup is a dispute raised by operations; recovery is handled off the platform and the dispute rules apply.
 34. If some lines expire or are cancelled, the final fee is fixed over the lines that remain, and any increase needs the buyer's re-approval within 15 minutes (decision 25 and invariant 24).
