@@ -305,7 +305,7 @@ A prepaid buyer pays the order total (item prices plus the final delivery fee) b
 **Provider reversals** *(decided)*. A mobile money provider (or the payer through it) can sometimes reverse a payment after Nyange treated it as final.
 - A reversal is recorded as a **correcting entry** against the wallet of the user whose payment was reversed: the payer of an order, or the user who topped up.
 - If that takes the wallet below zero, it becomes a **wallet debt**. A wallet in debt cannot withdraw until the debt is cleared, and new credits to it clear the debt first. Operations pursue repayment off the platform.
-- *(Proposed.)* If the reversed money is still on hold (the order is not yet delivered, or the reversal window is still open), the holds are consumed to cover it instead, and an undelivered order is cancelled.
+- If the reversed money is still on hold (the order is not yet delivered, or the reversal window is still open), the holds are consumed to cover it instead, and an undelivered order is cancelled. *(Decided.)*
 
 ### 6.3 Holds *(decided)*
 
