@@ -34,6 +34,11 @@ messaging. The platform is not asked to model every recovery or exception. Its j
 - assign a specific agent to a task, even outside the radius (section 4.6).
 - widen the search radius of an unclaimed task (section 4.6).
 
+**Admin safeguards** *(decided)*:
+- An admin can never raise, decide or assign anything on an order they are a party to.
+- Every admin action is recorded: who did it, what, when, and why.
+- A dispute outcome above a set amount needs a second admin's approval. The threshold is tunable and **waived at launch**.
+
 **Deliberately left to operations, and not designed in this document:** how agents report problems; noticing stalled or
 overdue deliveries; contacting buyers, sellers and agents; a takeover by another agent and the handover; returning goods
 to sellers; paying a first agent for part of a trip; agent liability and suspension.
@@ -216,7 +221,7 @@ A delivery task is offered within a radius that widens (3 km, then 7 km after 2 
 - **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, or the wrong kind); other. The party gives a reason and evidence (photos, notes).
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
 - **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders *(proposed)*; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved. A dispute raised before the window ends always holds the money, whichever happens first: the release of the money checks for disputes at that instant.
-- **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists.
+- **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists. An admin who is party to the order can never decide it, and above a set amount a second admin must approve the outcome (the threshold is waived at launch).
 - **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
 - **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
 - **Proof of delivery:** the agent must record it: the code the buyer gives at the door (photo optional), or, if the code is unavailable, a photo with the reason "code unavailable". This lets a "not received" claim be decided. A delivery recorded without the code is flagged and the buyer is told at once.
@@ -375,7 +380,7 @@ Rules that must always hold, whatever technology implements them.
 31. Withdrawals go only to the actor's own verified mobile money number.
 32. Every payment transaction for an order, including the delivery agent's fee, carries a transaction hold from the moment the money lands until the order is delivered and the reversal window has passed (for CoD orders, where the money lands after delivery, the reversal window runs from the moment it lands). The part before delivery cannot be waived. Until the hold ends, the money can be taken back for a cancellation and cannot be withdrawn.
 33. For prepaid orders, the delivery fee is held by Nyange from payment until an agent claims the task. If the order is cancelled before then, it is returned to the buyer.
-34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it.
+34. A user can never fulfil their own order: they cannot claim any line of an order they placed, and cannot deliver it. An admin cannot raise, decide or assign anything on an order they are a party to.
 
 **Cancellation**
 35. After payment the buyer can cancel only the whole order, and only before any shipment is picked up. Before any line is ready it is free; once goods are ready a configurable fee (0% at launch) compensates the sellers concerned.
@@ -401,6 +406,10 @@ Rules that must always hold, whatever technology implements them.
 49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode.
 50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery.
 
+**Admin actions**
+51. Every admin action is recorded with who did it, what, when and why.
+52. Where a second approval is required (a dispute outcome above the threshold; waived at launch), the outcome takes effect only once a second admin, different from the first, approves it.
+
 ## 8. Tunable rules and parameters
 
 Each can be set nationally, overridden per area (and per agent for cash controls), and waived (turned off) where it makes sense.
@@ -416,6 +425,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Time an unclaimed line waits before it expires | 30 minutes |
 | Dispute window | until the reversal window ends (4 hours after delivery) |
 | Response period for the other parties in a dispute | 24 hours |
+| Dispute outcome amount that needs a second admin's approval | waived at launch (tunable) |
 | Proof of delivery | the buyer's code (photo optional); if the code is unavailable, a photo and the reason "code unavailable" |
 | Escalate an unclaimed delivery task to operations, after the widest radius is reached | 10 minutes |
 | Hard deadline for an agent to claim a delivery task | 60 minutes after it was first offered |
@@ -486,6 +496,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 39. Stock is a simple in-stock status: no quantity counting or reservation at launch. A line is claimed whole by one seller, and a seller who cannot supply withdraws or drops out under the existing rules.
 40. An order that is not fully committed within 3 hours of being placed is cancelled, however many times its clocks have restarted.
 41. A delivery task is offered to agents only once its goods are ready, so agents do not wait at sellers' premises.
+42. Admin safeguards: an admin can never raise, decide or assign on an order they are party to; every admin action is recorded; a dispute outcome above a set amount needs a second admin's approval (threshold waived at launch).
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.
