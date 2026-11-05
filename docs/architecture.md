@@ -64,7 +64,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 ## 3. Core concepts
 
 - **Catalog:** the list of goods and services Nyange sells. Nyange owns it; sellers cannot add products, only offer on them.
-- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each mode the seller supports.
+- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each of its **components**: the refill and the container. The price of a mode is the sum of the components it charges: a swap charges the refill; a new container charges the refill and the container. A mode is available when every component it charges is in stock.
 - **Returnable container:** a catalog **variant** sold in a container the buyer normally returns (LPG cylinders, 20L water bottles). The variant defines the container, for example its brand and size, because cylinders are brand-specific. Its order lines have a **container mode**: *swap* (the buyer hands over an empty of that brand and size and receives a full one) or *new* (the buyer buys the container with its contents; this is always a purchase, the container becomes the buyer's, and there are no deposits).
 - **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
 - **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
@@ -120,7 +120,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
 6. Once they have claimed, a seller is expected to stay with the line, but may withdraw before payment under the rules in section 4.6. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
-7. Stock is a simple **in-stock** status on the offer (per container mode for a returnable container); the platform does not count or reserve quantities. A line is claimed whole by one seller (lines are not split between sellers). A seller who cannot supply a line they claimed withdraws or drops out under the rules in section 4.6.
+7. Stock is a simple **in-stock** status on the offer (per component for a returnable container; a mode is in stock when all its components are); the platform does not count or reserve quantities. A line is claimed whole by one seller (lines are not split between sellers). A seller who cannot supply a line they claimed withdraws or drops out under the rules in section 4.6.
 
 ### 4.3 Final fee, buyer decision, payment and preparation
 
@@ -521,7 +521,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 35. Withdrawals go only to the actor's own verified mobile money number.
 36. Until the buyer approves the final delivery fee, they can cancel the whole order at any time, free; any sellers who have claimed are released at no cost.
 37. CoD: Nyange credits sellers and the agent only after the collected cash has been handed over to Nyange's company wallet, either from the agent's float or through mobile money (section 4.5).
-38. Returnable containers (LPG cylinders, 20L water bottles) are modelled on the platform: each line is a swap or a new container, offers price each mode, and the agent collects and records the empty at delivery.
+38. Returnable containers (LPG cylinders, 20L water bottles) are modelled on the platform: each line is a swap or a new container, offers price each component (mode prices and mode availability are derived), and the agent collects and records the empty at delivery.
 39. Stock is a simple in-stock status: no quantity counting or reservation at launch. A line is claimed whole by one seller, and a seller who cannot supply withdraws or drops out under the existing rules.
 40. An order that is not fully committed within 3 hours of being placed is cancelled, however many times its clocks have restarted.
 41. A delivery task is offered to agents only once its goods are ready, so agents do not wait at sellers' premises.
@@ -530,7 +530,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 44. The platform keeps a simple reliability record per user and role for admins (completed orders, withdrawals, drop-outs, late handovers, disputes raised and lost). No ratings, and it does not affect claiming.
 45. Provider reversals: a reversal after the money is available is recorded as a correcting entry against the wallet of the user whose payment was reversed. The wallet may go negative (a wallet debt) and cannot withdraw until it is cleared; operations pursue repayment off the platform.
 46. Claimed-but-idle deadlines: a seller must mark goods ready within 45 minutes of payment (or approval, for CoD) or is treated as dropped out; an agent must pick up within 30 minutes of claiming or loses the claim. Both are tunable per area.
-47. Returnable containers, refined: the flag sits on the variant, which defines the container (brand and size); a new container is always a purchase, with no deposits; stock and eligibility are per mode; the agent carries each swap's empty back to the supplying seller as part of the same task, priced by a return container factor of 1.5 on the swap shipment's share of the route cost; the agent's fee stays on hold until the return is recorded.
+47. Returnable containers, refined: the flag sits on the variant, which defines the container (brand and size); a new container is always a purchase, with no deposits; offers price each component and mode prices, stock and eligibility are derived from them; the agent carries each swap's empty back to the supplying seller as part of the same task, priced by a return container factor of 1.5 on the swap shipment's share of the route cost; the agent's fee stays on hold until the return is recorded.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.

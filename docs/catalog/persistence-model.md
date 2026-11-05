@@ -316,7 +316,7 @@ The price locked is the seller's current price at that moment.
 None of these is applied yet. Each would be reviewed separately.
 
 1. Offers price **components**, and the price of a mode is derived from them, instead of the offer stating a price
-   per mode.
+   per mode. *(Applied to the specification.)*
 2. Every returnable offer **must state a container price**, which is locked on the line as a reference value.
 3. A **platform maximum service radius per area** bounds each seller location's radius.
 4. A **location status** and a **seller-level suspension** are part of the eligibility rule.
