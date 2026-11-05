@@ -319,7 +319,8 @@ None of these is applied yet. Each would be reviewed separately.
    per mode. *(Applied to the specification.)*
 2. Every returnable offer **must state a container price**, which is locked on the line as a reference value.
    *(Applied to the specification.)*
-3. A **platform maximum service radius per area** bounds each seller location's radius.
+3. A **platform maximum service radius per area** bounds each seller location's radius. *(Applied to the
+   specification; the default value is still open.)*
 4. A **location status** and a **seller-level suspension** are part of the eligibility rule.
 5. Quantity is an **integer in the product's sale unit**, with a product-level step and minimum.
 

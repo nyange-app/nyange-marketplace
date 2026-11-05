@@ -82,10 +82,11 @@ onto the platform later, if volume makes off-platform handling impractical.
 ### 3.1 Radius and widening
 
 - A pool entry is visible to an actor only within range:
-  - **Order line:** the seller location must be within the smaller of the seller's own service radius and the line's current search radius, measured from the buyer's drop point.
+  - **Order line:** the seller location must be within the smaller of the seller's own service radius (capped by the area's maximum service radius) and the line's current search radius, measured from the buyer's drop point.
   - **Task:** the agent's last known location must be within the task's search radius of the task's anchor point.
 - An unclaimed entry widens its search radius in steps over time (default: 3 km, then 7 km after 2 minutes, then 15 km after 5 minutes).
 - Radius schedules can differ by area, and can be turned off for an area.
+- A seller's own service radius cannot exceed the **maximum service radius** of the area their location is in (the national maximum applies outside every area). Where it would exceed it, the maximum applies.
 
 ### 3.2 Coverage
 
@@ -368,7 +369,7 @@ Rules that must always hold, whatever technology implements them.
 8. While a seller holds the exclusive window on an order's lines, others cannot claim them. When it ends, they open to everyone.
 
 **Rules by area**
-9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to the seller exclusive window, cash controls and radius schedules alike.
+9. For anything located inside an area, rules set for that area override national ones. Anything outside every area uses the national rules. This applies to the seller exclusive window, cash controls, radius schedules and the maximum seller service radius alike.
 
 **Money**
 10. Every money movement balances; nothing is created or lost.
@@ -444,6 +445,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 |---|---|
 | Initial search radius (orders, tasks) | 3 km |
 | Radius widening schedule | 7 km after 2 min; 15 km after 5 min |
+| Maximum seller service radius | Scoped per area, with a national default. Value to be set (open). |
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
 | Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal, but never beyond the overall cap below) |
