@@ -64,7 +64,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 ## 3. Core concepts
 
 - **Catalog:** the list of goods and services Nyange sells. Nyange owns it; sellers cannot add products, only offer on them.
-- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each of its **components**: the refill and the container. The price of a mode is the sum of the components it charges: a swap charges the refill; a new container charges the refill and the container. A mode is available when every component it charges is in stock.
+- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each of its **components**: the refill and the container. The price of a mode is the sum of the components it charges: a swap charges the refill; a new container charges the refill and the container. A mode is available when every component it charges is in stock. A returnable offer must state a price for the container even if the seller only supports swaps; that price is the container's **reference value**.
 - **Returnable container:** a catalog **variant** sold in a container the buyer normally returns (LPG cylinders, 20L water bottles). The variant defines the container, for example its brand and size, because cylinders are brand-specific. Its order lines have a **container mode**: *swap* (the buyer hands over an empty of that brand and size and receives a full one) or *new* (the buyer buys the container with its contents; this is always a purchase, the container becomes the buyer's, and there are no deposits).
 - **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
 - **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
@@ -116,7 +116,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 1. Eligible sellers (in range, with a matching standing offer in stock for the line's container mode where there is one, active) see the open line.
 2. A seller claims by choosing their offer. The claim succeeds only if the offer price (for the line's container mode, where there is one) is at or below the buyer's ceiling.
-3. On success the seller's actual offer price is **locked** for that line, and the claim is firm: there is no separate confirmation step.
+3. On success the seller's actual offer price is **locked** for that line, and the claim is firm: there is no separate confirmation step. For a returnable line, the claim also records the container's price as the line's **container reference value**, even when the line is a swap and the container is not charged.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
 5. Whoever loses a contested claim gets a clear "already taken" answer. Nobody is left waiting or errored.
 6. Once they have claimed, a seller is expected to stay with the line, but may withdraw before payment under the rules in section 4.6. If the buyer cancels, or the decision window passes without approval, or (prepaid) the payment window passes without payment, every seller is released at no cost to them, because no seller prepares anything before the buyer approves.
@@ -230,7 +230,7 @@ Both times are tunable per area.
 #### Disputes *(decided)*
 
 - **Who can raise one:** any party to the order. The buyer (against a seller or the agent), a seller (against the buyer or the agent), or the agent (against the buyer or a seller). **Operations can also raise a dispute on any order on their own initiative.**
-- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, the wrong kind, or an unsafe one); empty not returned to the seller (raised by the seller); other. The party gives a reason and evidence (photos, notes).
+- **Reasons:** goods not received; wrong, missing or damaged goods; buyer refused or could not be reached; goods not ready, or not as described, at pickup; delivery stalled after pickup (raised by operations); swap not possible (no empty handed over, the wrong kind, or an unsafe one); empty not returned to the seller (raised by the seller); other. The party gives a reason and evidence (photos, notes). For the two empty-related reasons, the **container reference value** recorded on the line is available to whoever decides the dispute; how it is used is decided case by case.
 - **Scope:** specific lines and/or the delivery fee, never the whole order by default. Undisputed lines release normally when their holds end.
 - **When:** from pickup until the reversal window ends (4 hours after delivery by default, or after the CoD credit lands for CoD orders; at delivery if the window is waived). Raising a dispute **extends the holds on the disputed amounts** until it is resolved. A dispute raised before the window ends always holds the money, whichever happens first: the release of the money checks for disputes at that instant.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists. An admin who is party to the order can never decide it, and above a set amount a second admin must approve the outcome (the threshold is waived at launch).
@@ -424,7 +424,7 @@ Rules that must always hold, whatever technology implements them.
 48. Ten minutes after a delivery task has reached its widest radius unclaimed, operations are alerted and the buyer is told.
 
 **Returnable containers**
-49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode, and only a seller who offers that mode can claim it. The variant defines the container (brand and size); a new container is always a purchase.
+49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode, and only a seller who offers that mode can claim it. The variant defines the container (brand and size); a new container is always a purchase. A returnable offer always states a container price; the container reference value recorded on a line is never charged to the buyer on a swap.
 50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery. The agent returns the empty to the seller who supplied the full one, and the agent's delivery fee stays on hold until the return is recorded.
 
 **Admin actions**
