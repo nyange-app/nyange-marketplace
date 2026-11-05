@@ -55,7 +55,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 | **Buyer** | Orders from the Nyange catalog. Never chooses a seller. |
 | **Seller** | Keeps standing offers (price, stock, service radius) on catalog items, from one or more locations they own. Claims order lines. Does not set delivery fees. |
 | **Field agent** | Claims tasks from a pool. Each agent has capabilities (delivery, market price capture, cash deposit, cash withdrawal, payment collection, more to be added). Belongs to Nyange's pool. |
-| **Admin** | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, sets rules and parameters. |
+| **Admin** | Curates the catalog, onboards and verifies sellers and agents, resolves disputes, sets rules and parameters. Can suspend a seller account or pause a single seller location; a suspended account is not eligible for new lines at any of its locations. |
 
 **Operations** means Nyange's admins working day to day; "operations" and "admins" refer to the same people.
 
@@ -78,6 +78,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 - **Dispute:** a recorded objection by a party to an order about specific lines and/or the delivery fee, which keeps the disputed money on hold until an admin decides (section 4.6).
 - **Area:** a named region of the country. Rules can be set per area and override the national defaults for anything
   located inside that area.
+- **Location status:** each seller location is either *open* or *paused*. The seller can pause and reopen their own locations. A paused location is not eligible for new order lines.
 
 ### 3.1 Radius and widening
 
@@ -115,7 +116,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.2 Seller claims a line
 
-1. Eligible sellers (in range, with a matching standing offer in stock for the line's container mode where there is one, active) see the open line.
+1. Eligible sellers (active account, in range from an **open** location, with a matching standing offer in stock for the line's container mode where there is one) see the open line.
 2. A seller claims by choosing their offer. The claim succeeds only if the offer price (for the line's container mode, where there is one) is at or below the buyer's ceiling.
 3. On success the seller's actual offer price is **locked** for that line, and the claim is firm: there is no separate confirmation step. For a returnable line, the claim also records the container's price as the line's **container reference value**, even when the line is a swap and the container is not charged.
 4. **Seller affinity:** after a seller claims one line, they have an exclusive window (default 90 seconds) to claim the other open lines of the same order, so they can fulfil the whole basket. After the window, those lines open to everyone.
@@ -365,7 +366,7 @@ Rules that must always hold, whatever technology implements them.
 4. A claim is firm once made. It ends only when the claimant withdraws or drops out under the rules in section 4.6, or the order is cancelled.
 5. Lines of a cancelled order cannot be claimed. If a cancellation and a claim happen at the same moment, one clearly happens first and the outcome is consistent.
 6. Only active sellers and agents can claim, and only if their account is also active. Suspending an account stops its claims.
-7. A seller can only fulfil from a location they own; an offer is always tied to a location of the offering seller.
+7. A seller can only fulfil from a location they own; an offer is always tied to a location of the offering seller. A seller can claim a line only if their account is active, the offering location is open, and the offer is in stock. Pausing a location or suspending an account never changes lines already claimed; those continue under the withdrawal and dispute rules.
 8. While a seller holds the exclusive window on an order's lines, others cannot claim them. When it ends, they open to everyone.
 
 **Rules by area**

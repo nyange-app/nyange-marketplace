@@ -321,7 +321,8 @@ None of these is applied yet. Each would be reviewed separately.
    *(Applied to the specification.)*
 3. A **platform maximum service radius per area** bounds each seller location's radius. *(Applied to the
    specification; the default value is still open.)*
-4. A **location status** and a **seller-level suspension** are part of the eligibility rule.
+4. A **location status** and a **seller-level suspension** are part of the eligibility rule. *(Applied to the
+   specification.)*
 5. Quantity is an **integer in the product's sale unit**, with a product-level step and minimum.
 
 ## 10. Deferred and open
