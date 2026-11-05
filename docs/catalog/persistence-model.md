@@ -323,7 +323,8 @@ None of these is applied yet. Each would be reviewed separately.
    specification; the default value is still open.)*
 4. A **location status** and a **seller-level suspension** are part of the eligibility rule. *(Applied to the
    specification.)*
-5. Quantity is an **integer in the product's sale unit**, with a product-level step and minimum.
+5. Quantity is an **integer in the product's sale unit**, with a product-level step and minimum. *(Applied to
+   the specification; the real step and minimum values are still open.)*
 
 ## 10. Deferred and open
 

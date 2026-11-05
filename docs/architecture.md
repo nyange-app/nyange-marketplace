@@ -64,7 +64,8 @@ onto the platform later, if volume makes off-platform handling impractical.
 ## 3. Core concepts
 
 - **Catalog:** the list of goods and services Nyange sells. Nyange owns it; sellers cannot add products, only offer on them.
-- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each of its **components**: the refill and the container. The price of a mode is the sum of the components it charges: a swap charges the refill; a new container charges the refill and the container. A mode is available when every component it charges is in stock. A returnable offer must state a price for the container even if the seller only supports swaps; that price is the container's **reference value**.
+- **Sale unit:** each catalog product is sold either by the piece or by a base unit of measure (for example kg). Quantities and offer prices are whole numbers in that unit. A product also has a **step** and a **minimum** quantity.
+- **Offer:** a seller's standing price and in-stock status for a catalog item, tied to one of the seller's own locations. For a returnable container, the offer states a price and an in-stock status for each of its **components**: the refill and the container. The price of a mode is the sum of the components it charges: a swap charges the refill; a new container charges the refill and the container. A mode is available when every component it charges is in stock. A returnable offer must state a price for the container even if the seller only supports swaps; that price is the container's **reference value**. The offer price is a whole number of UGX per unit of the product's sale unit, and the line price is the unit price times the quantity.
 - **Returnable container:** a catalog **variant** sold in a container the buyer normally returns (LPG cylinders, 20L water bottles). The variant defines the container, for example its brand and size, because cylinders are brand-specific. Its order lines have a **container mode**: *swap* (the buyer hands over an empty of that brand and size and receives a full one) or *new* (the buyer buys the container with its contents; this is always a purchase, the container becomes the buyer's, and there are no deposits).
 - **Order:** a buyer's request, made of **order lines** (one per catalog item and quantity).
 - **Order line:** the unit sellers claim. Each line has its own status, locked price and payment share.
@@ -109,7 +110,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 
 ### 4.1 Buyer places an order
 
-1. Buyer chooses catalog items and quantities, pins a drop location, and picks a payment method. For a returnable-container item, the buyer also chooses **swap** or **new container**.
+1. Buyer chooses catalog items and quantities, pins a drop location, and picks a payment method. For a returnable-container item, the buyer also chooses **swap** or **new container**. The quantity must be a whole number of the product's sale unit, at least the minimum, and a multiple of the step.
 2. For each line, the buyer sees the **price range** across eligible standing offers in range (lowest to highest) and **approves up to the highest**. That approval is the line's price ceiling. For a returnable container, the range is for the chosen container mode.
 3. The buyer also sees an **indicative delivery estimate** (section 5). It is not a commitment: the real fee is only known once every line is claimed (section 4.3), and the buyer decides then.
 4. Each line enters the order pool.
@@ -447,6 +448,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Initial search radius (orders, tasks) | 3 km |
 | Radius widening schedule | 7 km after 2 min; 15 km after 5 min |
 | Maximum seller service radius | Scoped per area, with a national default. Value to be set (open). |
+| Step and minimum quantity per product | Set per product in the catalog. Real values to be confirmed with traders (open). |
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
 | Prepaid payment window after approval | 60 minutes (no confirmed payment cancels; restarts when an order becomes whole again after a withdrawal, but never beyond the overall cap below) |
