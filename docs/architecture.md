@@ -89,6 +89,7 @@ onto the platform later, if volume makes off-platform handling impractical.
 - An unclaimed entry widens its search radius in steps over time (default: 3 km, then 7 km after 2 minutes, then 15 km after 5 minutes).
 - Radius schedules can differ by area, and can be turned off for an area.
 - A seller's own service radius cannot exceed the **maximum service radius** of the area their location is in (the national maximum applies outside every area). Where it would exceed it, the maximum applies.
+- A new seller location starts with a service radius equal to the initial search radius that applies in its area. The seller can raise it up to the area's maximum, or lower it.
 
 ### 3.2 Coverage
 
@@ -448,7 +449,8 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 |---|---|
 | Initial search radius (orders, tasks) | 3 km |
 | Radius widening schedule | 7 km after 2 min; 15 km after 5 min |
-| Maximum seller service radius | Scoped per area, with a national default. Value to be set (open). |
+| Maximum seller service radius | Scoped per area, with a national default of 15 km (the widest step of the radius widening schedule) |
+| Starting service radius of a new seller location | The initial search radius that applies in its area (3 km by default). The seller can change it, up to the area maximum. |
 | Step and minimum quantity per product | Set per product in the catalog. Real values to be confirmed with traders (open). |
 | Seller exclusive window (affinity) | 90 seconds |
 | Buyer decision window on the final fee | 15 minutes (no decision cancels) |
