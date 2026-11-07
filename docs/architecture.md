@@ -239,6 +239,7 @@ Both times are tunable per area.
 - **Process:** the other parties are told and have **24 hours** to respond. An admin decides on the evidence; if someone does not respond, the admin decides with what exists. An admin who is party to the order can never decide it, and above a set amount a second admin must approve the outcome (the threshold is waived at launch).
 - **Outcomes:** a full refund, a partial refund, or release to the seller and agent, or a split. Money moves only through the holds and wallets; refunds go to the buyer's wallet.
 - **Agent at fault** (goods lost or damaged in transit): who bears the loss is decided **case by case** by the admin.
+- **Empty not returned.** The admin attributes the case from the recorded custody of the empty: the buyer's handover to the agent, and the seller's receipt. If the seller is out the container, Nyange pays the seller the line's container reference value (at most) on the decision, from its company wallet. If the agent is at fault, Nyange recovers what it paid: first from the agent's fee held for that task, then from the agent's available wallet funds, then as a wallet debt for any remainder. If the buyer or the seller is at fault, nothing is recovered from the agent. The attribution is recorded in the reliability record. Recovery from the agent is a tunable parameter. *(Decided.)* A swap that cannot be completed at the door stays a case-by-case dispute, with the container reference value available to whoever decides it.
 - **Proof of delivery:** the agent must record it: the code the buyer gives at the door (photo optional), or, if the code is unavailable, a photo with the reason "code unavailable". This lets a "not received" claim be decided. A delivery recorded without the code is flagged and the buyer is told at once.
 - Problems discovered after the window has closed (for example a faulty LPG cylinder found the next day) are not covered at launch.
 
@@ -319,7 +320,7 @@ There are two kinds of hold. Both are real, recorded objects, never flags on a w
 
 **Transaction hold (the reversal hold).** It protects money that has just been paid, while the payment can still be reversed. The recipient cannot withdraw or use it meanwhile.
 
-- **It applies to every payment transaction, with the same rules for all of them:** the sellers' shares, the delivery agent's fee, and any payment type added later. The one exemption is a mobile money top-up, which carries no hold (decision 18).
+- **It applies to every payment transaction, with the same rules for all of them:** the sellers' shares, the delivery agent's fee, and any payment type added later. The exemptions are a mobile money top-up, which carries no hold (decision 18), and a payment from Nyange's company wallet to a user to settle a dispute decision.
 - **How long:** from the moment the money lands until the order's delivery is complete (the *order hold*, which always applies and cannot be waived), and then for a further **reversal window of 4 hours by default**. The reversal window is tunable per transaction type and can be waived; waiving it releases the money at delivery.
 - **What it records:** the wallet, the amount, the reason, the transaction it protects, when it starts, when it ends, its status, and how it ended.
 - **Lifecycle:** *active*, then ends in one of three ways: *released* when its time is up (the money becomes available), *extended* (for example while a dispute is open, until it is resolved), or *consumed* (the held money is used to cover a reversal such as a refund).
@@ -428,7 +429,7 @@ Rules that must always hold, whatever technology implements them.
 
 **Returnable containers**
 49. An order line for a returnable-container item always has a container mode (swap or new), chosen by the buyer at ordering. The price locked at claim is the seller's price for that mode, and only a seller who offers that mode can claim it. The variant defines the container (brand and size); a new container is always a purchase. A returnable offer always states a container price; the container reference value recorded on a line is never charged to the buyer on a swap.
-50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery. The agent returns the empty to the seller who supplied the full one, and the agent's delivery fee stays on hold until the return is recorded.
+50. A swap line is delivered only with the buyer's empty collected and recorded (a photo) alongside the proof of delivery. The agent returns the empty to the seller who supplied the full one, and the agent's delivery fee stays on hold until the return is recorded. A seller's loss of a container is compensated up to the container reference value; the agent's fee held for the task is applied first to any recovery from the agent.
 
 **Admin actions**
 51. Every admin action is recorded with who did it, what, when and why.
@@ -477,6 +478,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 | Rounding step | UGX 500 |
 | Cap fee at standalone cost | on |
 | Return container factor (shipments with swap lines) | 1.5 (tunable per area) |
+| Recover empty losses from the agent at fault | On at launch (when off, Nyange absorbs the loss) |
 | Allowed detour ratio for batching | 1.0 |
 | Checkout estimate road factor | 1.4 |
 | Commission on goods / Nyange's cut of the delivery fee | 5% / 0% (the commission is 5% of the item price, deducted from the seller's share; the delivery fee is not charged commission) |
@@ -536,6 +538,7 @@ Each can be set nationally, overridden per area (and per agent for cash controls
 45. Provider reversals: a reversal after the money is available is recorded as a correcting entry against the wallet of the user whose payment was reversed. The wallet may go negative (a wallet debt) and cannot withdraw until it is cleared; operations pursue repayment off the platform.
 46. Claimed-but-idle deadlines: a seller must mark goods ready within 45 minutes of payment (or approval, for CoD) or is treated as dropped out; an agent must pick up within 30 minutes of claiming or loses the claim. Both are tunable per area.
 47. Returnable containers, refined: the flag sits on the variant, which defines the container (brand and size); a new container is always a purchase, with no deposits; offers price each component and mode prices, stock and eligibility are derived from them; the agent carries each swap's empty back to the supplying seller as part of the same task, priced by a return container factor of 1.5 on the swap shipment's share of the route cost; the agent's fee stays on hold until the return is recorded.
+48. Empty-loss compensation: attributed from the custody records; Nyange pays the seller up to the container reference value on the decision, with no hold; recovery from the agent at fault is made from the held fee, then available wallet funds, then a wallet debt, and can be switched off by a parameter (on at launch). A swap that cannot be completed at the door stays a case-by-case dispute.
 
 **Deferred** (handled by operations off the platform, or later; not designed here)
 - Compensating an agent already travelling when the buyer cancels.

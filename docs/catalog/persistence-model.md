@@ -344,7 +344,8 @@ Open:
 
 - The real `step` and `minimum` values per product, to be confirmed with traders.
 - The per-area maximum service radius values.
-- The outcome rules for "empty not returned" and "swap not possible" disputes. The container reference value is
-  stored, but the compensation rule is not defined.
+- The outcome for "swap not possible" at the door stays a case-by-case dispute; the container reference value is
+  stored on the line for whoever decides it. (Compensation for "empty not returned" is now defined in the
+  specification, section 4.6 and decision 48.)
 - Whether browsing should ever show variants with no nearby offers as "not available in your area" instead of
   hiding them (currently hidden).
