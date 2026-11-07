@@ -144,7 +144,8 @@ The stored radius is what the seller asked for. The radius that applies is
 
 `least(service_radius_m, area maximum, the line's current search radius)`
 
-and the area maximum is applied when eligibility is evaluated, never written back.
+and the area maximum is applied when eligibility is evaluated, never written back. A new location starts at the
+initial search radius that applies in its area (3 km by default). The national default maximum is 15 km.
 
 ### 3.5 offer
 
@@ -320,7 +321,7 @@ None of these is applied yet. Each would be reviewed separately.
 2. Every returnable offer **must state a container price**, which is locked on the line as a reference value.
    *(Applied to the specification.)*
 3. A **platform maximum service radius per area** bounds each seller location's radius. *(Applied to the
-   specification; the default value is still open.)*
+   specification; the national default is 15 km.)*
 4. A **location status** and a **seller-level suspension** are part of the eligibility rule. *(Applied to the
    specification.)*
 5. Quantity is an **integer in the product's sale unit**, with a product-level step and minimum. *(Applied to
@@ -343,7 +344,7 @@ Deferred:
 Open:
 
 - The real `step` and `minimum` values per product, to be confirmed with traders.
-- The per-area maximum service radius values.
+- Per-area overrides of the maximum service radius, once real coverage is known (the national default is 15 km).
 - The outcome for "swap not possible" at the door stays a case-by-case dispute; the container reference value is
   stored on the line for whoever decides it. (Compensation for "empty not returned" is now defined in the
   specification, section 4.6 and decision 48.)
